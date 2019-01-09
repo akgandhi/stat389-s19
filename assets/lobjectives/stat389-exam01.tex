@@ -41,17 +41,59 @@
 
 \begin{enumerate}
 \renewcommand\labelenumi{\textcolor{light}{\textbf{LO \theenumi.}}}
-\item Some notes here.
-\begin{itemize}
-\renewcommand{\labelitemi}{{\textcolor{dark}{{\tiny $\blacksquare$}}}}
-\item details
-\item details
-\end{itemize}
-The designation of which variable is response or explanatory is often not
-fixed, and may be a decision of the investigator.
+
+\item Define and understand the role of \textbf{training data} and
+\textbf{testing data} in statistical learning.
+
+\item Utilize common \textbf{loss functions}, including mean squared error,
+absolute error, and misclassification error. You should be able to evaluate
+these by hand on small datasets and in R code from larger ones.
+
+\item Apply the one-dimensional \textbf{best split} estimator by hand on small
+datasets.
+
+\item Understand the R code in the function \verb|casl_utils_best_split|.
+
+\item Visualize simple linear regression from a scatter plot and understand
+the interpretation of the coefficients.
+
+\item Derive the simple linear regression ordinary least squares (OLS)
+coefficients using calculus.
+
+\item Apply the matrix format of the least squares estimator and understand
+the notation for $y$, $X$, $\beta$, and $\widehat{\beta}$.
+
+\item View a matrix as a linear transformation between $\mathbb{R}^n$ and
+$\mathbb{R}^m$ and matrix multiplication as function composition.
+
+\item Understand the matrix transpose and inverse, its notation, and rules
+for applying these to matrix equations.
+
+\item Derive the equations for the gradient of an inner product:
+\begin{align*}
+\nabla_\beta \left( a^t \beta \right) &= a
+\end{align*}
+And the gradient of a quadratic form:
+\begin{align*}
+\nabla_\beta \left( \beta^t A \beta \right) &= \frac{1}{2} A^t \beta.
+\end{align*}
+
+\item Derive the normal equations for the ordinary least squares estimator for
+multivariate linear regression.
+
+\item Understand the geometric interpretation of the singular value
+decomposition (SVD) and role of the singular values.
+
+\item Apply the SVD to the normal equations to find a computationally stable
+solution to the ordinary least squares problem for linear regression.
+
+\item Compute the SVD in R and use matrix methods to directly compute the
+ordinary least squares estimator.
+
+\item Apply the \verb|lm.fit| function to have R compute the ordinary least
+squares solution directly.
 
 \end{enumerate}
-
 
 \end{document}
 
