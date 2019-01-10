@@ -71,14 +71,33 @@
 
 \textbf{Introduction}
 
-This book was written to supplement the existing literature in statistical
+I am planning on teaching this course quite a bit differently than when it was
+offered in Fall 2017. With the addition of a data science course, this frees
+us up to cover a more theoretical treatment of statistical learning. Of
+course, applications will still be discussed and our work will be very
+applicable to real-world applications. It is just that, at least at first,
+we will do a bit more with theoretical derivations. These will be most
+present early in the semester, in part because the theory for later material
+requires more advanced mathematics (such as functional analysis). Also, once
+we get to neural networks, most of the theory has not even been written yet.
+
+The notes you have here, and many of those used this semester, come from a
+textbook I wrote with Michael Kane (Yale Biostatistics) and Bryan Lewis. As
+it comes out in April 2019, we will not be able to use it directly for the
+course. I will take notes liberally from the book and place them online here.
+Note that you may catch some strange language (such as ```in the next
+chapter...") that I simply missed when converting the notes. Hopefully these
+do not detract too much from the core material.
+
+Our book \textit{A Computational Approach to Statsitical Learning}
+was written to supplement the existing literature in statistical
 learning and predictive modeling. It provides a novel treatment of
 the computational details underlying the application of predictive models to
 modern datasets. It grew out of lecture notes from several courses we have
 taught at the undergraduate and graduate level on linear models, convex
 optimization, statistical computing, and supervised learning.
 
-The major distinguishing feature of our text is the inclusion of code snippets
+The major distinguishing feature of the text is the inclusion of code snippets
 that give working implementations of common algorithms for
 estimating predictive models. These implementations are written in the R
 programming language using basic vector and matrix algebra routines. The goal
@@ -100,54 +119,10 @@ how penalized regression, additive models, spectral clustering,
 and neural networks fit into a cohesive set of methods for
 the construction of predictive models built on core concepts from
 linear algebra. The general structure
-of our text follows that of the two popular texts \textit{An Introduction
+of follows that of the two popular texts \textit{An Introduction
 to Statistical Learning} (ISL) \cite{james2013introduction} and
 \textit{The Elements of Statistical Learning} (ESL)
-\cite{friedman2001elements}. This makes our book a reference for
-traditional courses that use either of these as a main text. In contrast
-to both ISL and ESL, our text focuses on giving an in-depth analysis
-to a significantly smaller set of methods, making it more conducive
-to self-study as well as appropriate for second courses in linear models
-or statistical learning.
-
-\textbf{Computational approach}
-
-\index{reference implementation}
-In this text, we describe popular statistical models in terms of
-their mathematical characteristics and the algorithms used to
-implement them. We provide a reference implementation, in the R programming
-environment, for each of the models considered. Code in this book is meant to
-be read inline, just as you would read the text. Unlike pseudocode, our
-reference implementations can be run, tested, and directly modified. However,
-the code is not optimized and does not include the checks and error handling
-one might expect from production-ready code. It is meant to be simple and
-readable.
-
-Our computational approach leads to a different presentation compared to
-traditional approaches in statistical pedagogy where theory is separated from
-practice (applying functions to datasets). While
-the two-pronged approach clarifies the capabilities and
-underpinnings of the field, it is in the space between these prongs that
-researchers in the field usually find inspiration.
-New models and approaches are often developed iteratively and empirically
-while working with real datasets. Each step is justified mathematically only
-after it is found to be effective in practice. Our approach bridges
-statistical theory and model building by showing how they are related
-through their implementation.
-
-Understanding the computational details behind statistical modeling algorithms
-is an increasingly important skill for anyone who wants to apply modern
-statistical learning methods. Many popular techniques do not
-allow for simple algorithms that can be easily applied to any problem. For
-example training neural networks with stochastic gradient
-descent is closer to an art form than a push button algorithm that can
-be obfuscated from the user. Nearly every chapter in the text shows how
-understanding the algorithm used to estimate a model often provides essential
-insight into the model's use cases and motivation. Additionally, increasingly
-large data sources have made it difficult or impossible, from a purely
-computational standpoint, to apply every model to any dataset. Knowledge of
-the computational details allows one to know exactly what methods are
-appropriate for a particular scale of data.
+\cite{friedman2001elements}.
 
 \vspace{12pt}
 \textbf{Statistical learning}
@@ -160,7 +135,7 @@ artificial intelligence, which broadly encompasses all forms of computer
 intelligence, both hand coded and automatically adapted through observed data.
 
 \index{supervised learning}
-We focus in this text on the subfield of \textit{supervised learning}.
+We will focus on the subfield of \textit{supervised learning}.
 The goal is to find patterns in available
 inputs in order to make accurate predictions on new, unseen data. For this
 reason models used in supervised learning are often called \textit{predictive
@@ -187,7 +162,7 @@ to a company's help desk.
 Domain-specific expertise is essential to the successful construction and
 deployment of statistical learning algorithms. However, most methods used for
 learning a predictive model from preprocessed data consist of applying
-general purpose training algorithms. The algorithms we cover in this text can
+general purpose training algorithms. The algorithms we cover can
 be applied to a wide range of tasks, including all of the above examples,
 given the availability of sufficiently representative data for training.
 
@@ -282,7 +257,7 @@ end of this chapter provide an opportunity to further test and tweak the
 
 We conclude this introduction by mathematically formalizing the central
 elements of supervised learning. The resulting language and terminology will
-be useful as a reference throughout the text.
+be useful as a reference throughout the course.
 
 Assume that there exists some unknown function $f$ that maps
 elements from a set $\Omega$ into a set $\mathcal{Y}$,
@@ -340,7 +315,7 @@ X &= \begin{pmatrix} \omega_1 \\ \vdots \\ \omega_n \end{pmatrix} \in
 The matrix $X$ is known as the \textit{feature matrix}.
 This simplification allows for us to draw on techniques from numerical
 analysis, functional analysis, and statistics in the pursuit of predictive
-models. A central theme of this text will be building and evaluating
+models. A central theme of this course will be building and evaluating
 supervised learning algorithms motivated by the study of properties of the
 matrix $X$ and assumptions made regarding the function $f$.
 
@@ -388,7 +363,84 @@ is a guiding theme throughout this text.
 \vspace*{0pt}
 
 \begin{enumerate}
-\item Here is a thing!
+\item Describe what the spaces $\Omega$ and $\mathcal{Y}$ would be for a
+predictive modeling task that estimates whether an email message is either
+spam or not spam.
+\item Describe what might be some possible columns of the dataset $X$ in
+a task trying to predict the sale price for a used car.
+\item Assume that the feature matrix $X$ has only one column, with values
+evenly distributed between $0$ and $1$, and the true function $f$ is
+deterministic and defined such that to $y_i = x_i^2$. If our modeling
+algorithm is only allowed to produce a $\widehat{f}$ equal to a linear
+function of $x_i$, illustrate using a hand drawn plot how (in this case) the
+low model complexity directly leads to model bias.
+\item Assume that the feature matrix $X$ has only one column, with values
+evenly distributed between $0$ and $1$, and the true function $f$ is
+deterministic and defined such that to $y_i = x_i^2$. If our modeling
+algorithm is only allowed to produce a $\widehat{f}$ equal to a linear
+function of $x_i$, illustrate using a hand drawn plot how (in this case) the
+low model complexity directly leads to model bias.
+\item Using the same setup as in the previous question, but allowing
+$\widehat{f}$ to take on any form, illustrate an example of a curve that has
+been overfit to the data.
+\item Consider the following small dataset:
+
+\begin{center}
+\begin{tabular}{cc}
+x & y \\ \hline
+1 & 0 \\
+2 & 1 \\
+3 & 0 \\
+4 & 0 \\
+5 & 1 \\
+6 & 1 \\
+7 & 0 \\
+8 & 1 \\
+9 & 1 \\
+10 & 1 \\
+\end{tabular}
+\end{center}
+
+Answer the following questions (you should be able to do this by hand):
+
+\begin{itemize}
+\renewcommand{\labelitemi}{\tiny $\blacksquare$}
+\item What is the best split value derived from this data? What value does
+your model predict will be the value of $y$ if $x = 1$? How about $x=10$ and
+$x=5$?
+\item Using mis-classification loss, what is the loss of your model on this
+dataset?
+\end{itemize}
+
+\item Take the following data as a \textit{test set} for the model you built
+in the prior question:
+
+\begin{center}
+\begin{tabular}{cc}
+x & y \\ \hline
+4 & 0 \\
+4 & 1 \\
+4 & 1 \\
+8 & 0 \\
+8 & 1 \\
+8 & 0 \\
+8 & 1 \\
+\end{tabular}
+\end{center}
+
+What is the misclassification rate on the test data? Is this value better or
+worse than the loss function applied to the training data?
+
+\item If you have not yet installed R, do that now. Using code similar to that
+in the notes, redo the best split prediction using R. Does it give the same
+output that you had when computing it by hand?
+
+\item (optional) Modify the function \code{cnlp\_utils\_best\_split} so that
+it also checks whether the best split would classify every value as a $1$ if
+it is less than some cutoff value. Make sure that the output makes it clear
+whether the cutoff is a less than or greater than value.
+
+
 \end{enumerate}
 
 \end{document}

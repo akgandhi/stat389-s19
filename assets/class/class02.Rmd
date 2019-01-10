@@ -1,0 +1,195 @@
+---
+title: "Class 02: Simple Linear Regression"
+output: html_document
+---
+
+In addition to getting us started with regression, today will also serve as
+an introduction to R and RStudio. I know some of you have used R, others
+have used Python, some are CS majors who may have only used Java and C++,
+and perhaps some of you have never written code before. All of these are
+fine, but I want to get us all on the same page as quickly as possible. As
+a first step, hopefully you have downloaded R and RStudio and are viewing
+this *inside* R studio. If not, go back to the notes on the first day or
+ask for help! If so, keep reading!
+
+The document you are reading right now is written something called *Rmarkdown*.
+The most powerful feature of Rmarkdown is that we can intermix code into the
+document and actually run it in real time. To do this, we enclose code blocks
+with three back ticks, and preface the first one with r in squiggly brackets.
+Every code block will get run in sequence if when we hit the Preview or Knit
+buttons, but we can also run just this block by hitting the play button to
+the right of the block. Here, let’s add 1 and 1 together:
+
+```{r}
+1 + 1
+```
+
+This is very similar to IPython Notebooks, though some of the details are a
+bit different. As a positive, the file is plain text and can be read and
+edited easily in any generic text editor that you want to use. On the negative
+side (depending on your view) is that the notebook does not store any of the
+information from the executed code. You will always have to rerun the script
+to get the output to work (this is only partially true; I can explain more if
+you would like!).
+
+### Install R Packages
+
+In addition to the basic R functions that exist on start-up, there are
+thousands of user-contributed packages the implement various add-ons. To
+install these packages, we use the function install.packages. Run this code
+to install the following packages; I wrote the code in such a way that it
+it will not reinstall packages that you already have on your machine.
+
+```{r}
+if (!require("dplyr")) install.packages("dplyr")
+if (!require("ggplot2")) install.packages("ggplot2")
+if (!require("viridis")) install.packages("viridis")
+if (!require("readr")) install.packages("readr")
+if (!require("devtools")) install.packages("devtools")
+```
+
+Once a package is installed, we also need to load it. While installing the
+package only needs to be done once, we have to load it each and every time we
+restart R (notice up above that I included the option eval = FALSE in the code
+block so that my computer does not constantly reinstall it):
+
+```{r}
+library(readr)
+```
+
+Once loaded, we can run commands from the readr package. We will do this in
+just a moment.
+
+### Loading data
+
+Let’s load in four libraries that will be important for us throughout the
+semester. Note that I’ll turn off messages as the packages produce quite a
+bit of verbose output that we do not need to worry about. Also note that
+re-loading the readr package has no ill-effects.
+
+```{r}
+library(readr)
+library(ggplot2)
+library(viridis)
+library(dplyr)
+```
+
+Next, let’s load in a small dataset to work with today. This data consists of
+the average number of hours per day that various species are awake. We will
+read the data set, like most of those in this class, directly from my website:
+
+```{r}
+msleep <- read_csv("https://statsmaths.github.io/ml_data/msleep.csv")
+```
+
+Once this code has been run, you should see the dataset pop up in the upper
+right hand corner of the screen. Clicking on it opens up a spreedsheet-like
+view of the data.
+
+Particularly important are the first three columns, as most datasets that we
+work with this semester will have these columns as well. The meaning of these
+are:
+
+- the first column is just an id; don’t lose it!
+- the second indicates whether this is a sample where you know the response
+  or if have to predict the response
+- the third column gives the response of interest; it is missing whenever the
+  second column is equal to “test”
+
+### qplot
+
+We will use the function `qplot` to produce simple plots
+based on our data. In its most basic form, we give `qplot`
+the name of the variable we want to plot and the name of
+the dataset in which the variable resides.
+
+```{r, message = FALSE}
+qplot(bodywt_log, data = msleep)
+```
+
+The function is quite smart and will choose by default the
+most appropriate plot to use. Here it is creating a *histogram*
+because we gave it one numeric variable.
+
+Applying `qplot` to a categorical variable gives a bar plot:
+
+```{r}
+qplot(vore, data = msleep)
+```
+
+We can also give `qplot` two variable. For instance, if we
+use two continuous variables the function will construct a
+scatter plot:
+
+```{r, message = FALSE}
+qplot(bodywt_log, awake, data = msleep)
+```
+
+The missing values that we are warned about are those points
+where we need to produce predictions.
+
+### Linear regression
+
+It seems like there is a positive relationship between body
+weight and hours spent awake. Let's now try to model this using
+a statistical learning model.
+
+**NOW, PLEASE RETURN TO THE LAB QUESTIONS BEFORE PROCEEDING**
+
+### Linear regression in R
+
+We can add a linear regresion line to out plot using **qplot** directly.
+Adding things to a `qplot` graphic literally involves using the `+` sign and
+adding the results of other functions.
+Here we use `geom_smooth` with an option to make the smooth strictly linear:
+
+```{r}
+qplot(bodywt_log, awake, data = msleep) +
+  geom_smooth(method = "lm")
+```
+
+We can fit the exact some model analytically, rather than graphically,
+by calling the `lm` function. Here we use an R formula: the
+response variable (thing we want to predict), followed by the `~`
+sign, followed by the predictor variable. As with the graphics command,
+we need to indicate which dataset is being used. The output shows
+the slope and intercept of the best-fit-line.
+
+```{r}
+model <- lm(awake ~ bodywt_log, data = msleep)
+model
+```
+
+The function `predict` will give us the predicted values implied
+by this line:
+
+```{r}
+predict(model, newdata = msleep)
+```
+
+### Finishing up
+
+Finally, we want to test how well this linear regression performs on the
+dataset. We can add the predictions back into the `msleep` dataset as follows:
+
+```{r}
+msleep$awake_pred <- predict(model, msleep)
+```
+
+Click on the msleep dataset again to verify that there is a
+new column of predictions. Notice that these are filled in
+for all values. We can check the mean squared error of these predictions
+with the following code:
+
+```{r}
+tapply((msleep$awake_pred - msleep$awake)^2, msleep$train_id, mean)
+```
+
+Notice that, since you do not have the testing data, you cannot test how well
+your prediction works on new data. Later, I will make this data public and
+you can test your predictions. More on this in the upcoming weeks!
+
+
+
+
+

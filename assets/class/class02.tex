@@ -60,7 +60,7 @@
 
 % 7. Define numbering scheme for equations (only needed for handout).
 \numberwithin{equation}{section}
-\setcounter{section}{1}
+\setcounter{section}{2}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
@@ -69,13 +69,18 @@
 
 \vspace*{18pt}
 
-\textbf{}
+Last time, I said that I would be using note from my textbook this semester
+to teach the course. Today is one exception because I think it is useful to
+start with a bit of review that is not included in the text. For this, I think
+it is best to just jump right into the notes rather than explaining this to
+you in detail. Hopefully the material today will come quickly. If this seems
+overwhelming, today would be a good time to talk with me about your background
+and the course going forward.
 
-
-\renewcommand{\section}[2]{}%
-\vspace{12pt}
-\textbf{References}
-\bibliography{bibfile}
+% \renewcommand{\section}[2]{}%
+% \vspace{12pt}
+% \textbf{References}
+% \bibliography{bibfile}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
@@ -85,7 +90,45 @@
 \vspace*{0pt}
 
 \begin{enumerate}
-\item Here is a thing!
+\item To start, download and open the \verb|class02.Rmd| file in RStudio.
+Follow the script until you get to the section that asks you to return to
+these notes.
+\item Last time we started with the basic idea of statistical learning. We
+observe pairs $(x_i, y_i)$ and want to construct a function $f(x)$ from this
+training data that does a good job of predicting future values of $y_i$ given
+new values of $x_i$. One of the simplest such models for predicting a
+continuous response $y$ is simple linear regression. Visually this corresponds
+to fitting a linear function $f$ to the data such that:
+\begin{align}
+f(x_i) &= a + b \cdot x_i.
+\end{align}
+Where the parameters $a$ (the intercept) and $b$ (the intercept) are
+\textit{learned} from the data. Write down, symbolically, what the mean
+squared loss function is of using the above $f$ to predict the values $y_i$.
+\item We are going to simplify things further by removing the intercept term
+$a$ from the model and assuming that we have only:
+\begin{align}
+f(x_i) &= b \cdot x_i.
+\end{align}
+Taking the equation you had from the previous question, write down the loss
+function for the new value of $f$. Take the derivative with respect to $b$
+and set it equal to zero. Can you find a formula for $b$ that minimizes the
+loss function?
+\item Taking the second derivative of the loss function, prove that you found
+a global minimizer in the previous question rather than a saddle point or
+maximum.
+\item We typically write the learned parameters in a model with a `hat'. So
+the slope you computed above becomes $\widehat{b}$. Can you re-write $\widehat{b}$
+such that the estimator is written a weighted sum of the values $y_i$?
+\item So far, we have made no assumptions about the `true' nature of the
+relationship between $x$ and $y$. Assume that we can write:
+\begin{align}
+y_i &= b \cdot x_i + \epsilon_i
+\end{align}
+For some term $\epsilon_i$ known as the \textit{error term}. Plugging this into
+your equation for $\widehat{b}$, can you argue that $\widehat{b}$ will be close
+to b if the error terms are small?
+\item Return to the R code to complete today's lab.
 \end{enumerate}
 
 \end{document}
