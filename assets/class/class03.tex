@@ -60,136 +60,192 @@
 
 % 7. Define numbering scheme for equations (only needed for handout).
 \numberwithin{equation}{section}
-\setcounter{section}{1}
+\setcounter{section}{3}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
 
-{\LARGE Handout 03: Matrix Computations and Multivariate Regression}
+{\LARGE Handout 03: Vector and Matrix Computations}
 
 \vspace*{18pt}
 
-\textbf{
+Last time we started working with simple linear regression models that have
+only a single characteristic $x$ that we can use to predict some response
+$y$. As you might imagine, most interesting examples have significantly more
+data inputs. To represent these, and to derive a comparable derivation in the
+multivariate case, we need some matrix theory and vector calculus. Today we
+are going to review (and in a few cases even derive the basic properties) of
+both today. If the material is completely new to you, I suggest taking some
+time this week to re-view the material again before next class.
 
-Linear models are amongst the most well known and often-used methods for
-modeling data. They are employed to study the
-outcomes of patients in clinical trials, the price of financial
-instruments, the lifetimes of fruit flies, and many other
-responses from a wide range of fields. Their popularity is not
-unwarranted. In fact, the discussion of linear models and their
-variants take up a considerable portion of this text.
+\textbf{Vectors}
 
-\index{linear model}
-Consider observing $n$ pairs of data $(x_i, y_i)$ for $i = 1, \ldots n$.
-A simple linear model would assume that the data are generated according to the
-equation
+For us, a vector is simple an ordered collection of real numbers. The number
+of terms in the collection is called the \textit{dimension} of the vector and
+we write $v \in \mathbb{R}^n$ to represent an $n$-dimensional vector $v$. You
+can think of the vector as a column of number:
 \begin{align}
-y_i &= \beta_0 + \beta_1 x_i + \epsilon_i,
+v &= \begin{bmatrix} v_1 \\ v_2 \\ \vdots \\ v_n \end{bmatrix} \in \mathbb{R}^n.
 \end{align}
-where $\epsilon_i$ is some unobserved error term and the $\beta_j$'s
-are unknown constants. The goal of statistical modeling is to use
-the observed data to, in some fashion, estimate the parameters
-$\beta_0$ and $\beta_1$.
-
-Why are linear models so popular? One important attribute is that
-linear models provide a concrete interpretation for all of their
-parameters. Take the two variable model for predicting housing sale
-prices as a function of total area (in square feet or square meters)
-and the number of bedrooms,
+We use the notation $v_i$ to refer to the $i$'th term in the vector. Vector
+addition is defined \textit{componentwise} such that:
 \begin{align}
-\text{price}_i &= \beta_0 + \beta_1 \cdot \text{area}_i + \beta_2 \cdot \text{bedrooms}_i + \epsilon_i.
+v + u &= \begin{bmatrix} v_1 \\ v_2 \\ \vdots \\ v_n \end{bmatrix} +
+\begin{bmatrix} u_1 \\ u_2 \\ \vdots \\ u_n \end{bmatrix}
+=\begin{bmatrix} v_1 + u_1 \\ v_2 + u_2 \\ \vdots \\ v_n + u_n \end{bmatrix}
 \end{align}
-The parameters in this model tell us how much the response, price,
-changes when one of the predictor variables changes with the other
-variable held fixed. Mathematically, we can describe this precisely
-using partial derivatives
+Only vectors of the same dimension can be added together. We can also multiply
+a vector by a fixed scalar value $\alpha \in \mathbb{R}$ in a component-wise
+fashion:
 \begin{align}
-\beta_1 &= \frac{\partial \, \text{price}}{\partial \, \text{area}}, \\
-\beta_2 &= \frac{\partial \, \text{price}}{\partial \, \text{bedrooms}}.
+\alpha \cdot v &= \alpha \cdot \begin{bmatrix} v_1 \\ v_2 \\ \vdots \\ v_n \end{bmatrix}
+= \begin{bmatrix} \alpha \cdot v_1 \\ \alpha \cdot v_2 \\ \vdots \\ \alpha \cdot v_n \end{bmatrix}.
 \end{align}
-The model separates the effect of the total size of a house and the
-total number of bedrooms. This information is useful to real estate
-agents, homeowners, construction companies, and economists.
-Linear models also allow for the interpretation of categorical predictors
-through the use of indicator variables. If our housing price data also
-includes information about whether a given observation is from one of
-three neighborhoods, say `uptown,' `downtown,' and `suburbia,' we can
-define variables that are one when observation $i$ is in the given
-neighborhood and zero otherwise. A linear model with these variables
-may be written as
+It is possible to define a component-wise multiplication of two vectors, but
+this is rarely very useful and we will skip this for today.
+
+We can also describe the size of a vector by thinking of the distance between
+the set of numbers in $n$-dimensional space and the origin. Specifically, the
+Euclidean-norm (or $\ell_2$-norm) of a vector is given and defined by:
 \begin{align}
-\text{price}_i &= \beta_0 + \beta_1 \cdot \text{area}_i + \beta_2 \cdot \text{bedrooms}_i + \\ \nonumber
-              & \quad  \beta_3 \cdot \text{downtown}_i + \beta_4 \cdot \text{uptown}_i + \epsilon_i.
+|| v ||_2 &= \sqrt{\sum_i v_i^2}.
 \end{align}
-The parameter $\beta_3$ can still be viewed as a partial derivative, here
-representing the difference in the expected price between a house in suburbia
-and a house in the downtown neighborhood, if both are the same size and have
-the same number of bedrooms.
-
-The relatively simple form of linear models allows for a
-great deal of variation in the model assumptions. The $x_i$'s can
-be treated as fixed values, a \textit{fixed design}, or they may
-be considered to be random variables themselves, as in a
-\textit{random design} model. In biological
-applications the analysis usually depends on strict independence
-between the errors. In time series data, as commonly seen in finance or macroeconomics,
-the $\epsilon_i$ are often serially correlated with one another.
-Linear models such as the autoregressive integrated
-moving average (ARIMA) model and the autoregressive conditional heteroskedasticity
-(ARCH) model are used to model time series data with serial correlation
-structures. Longitudinal medical studies, where data is collected on
-multiple instances from the same cohort of patients over a period of
-time, may assume that the errors for observations from the
-same subject correlate differently than errors between different
-patients. Fixed, random, and mixed effects
-models---core statistical methods within certain sub-disciplines in
-the sciences and social sciences---are forms of linear models adapted
-to handle applications such as resampled data.
-
-Linear models also benefit from a strong theoretical background. The
-standard estimators, which we will explore in the following two sections,
-can be described in terms of weighted sums of the original data. Under
-weak assumptions, we can then draw on the central limit theorem and
-large sample theory to construct asymptotically valid confidence
-intervals and hypothesis testing frameworks. Importantly, most of this
-theory can be extended to the various extensions and complex assumptions
-often used in practice. Also, these theoretical tools are useful even
-when the primary task is one of prediction. Hypothesis tests aid in
-the process of deciding whether to add
-or delete a certain variable from a model. Confidence intervals, when
-combined with an estimate of the noise variance, are extensible to
-prediction intervals. These provide a range of likely values for newly
-observed data points, in addition to a singular `best' value. We
-will see several ways in which these estimates are useful in practice
-when building predictive models.
-
-The standard estimators for
-parameters in linear models can be calculated using relatively straightforward
-computational approaches. For this reason, linear models
-are often used in applications even when many of the aforementioned
-benefits do not directly apply. Notice that a linear model must be
-linear only relative to the $\beta$ terms. If we have pairs of data
-$(x_i, y_i)$ but believe that there is a non-linear relationship
-between $x$ and $y$, we could build the model
+This should correspond with other definitions you may have seen for distance
+measures. Finally, we will also define the inner product between two vectors
+of the same dimension as:
 \begin{align}
-y_i &= \beta_0 + \beta_1 \cdot x_i + \beta_2 \cdot x_i^2 + \cdots + \beta_p \cdot x_i^p + \epsilon_i.
+u \cdot v &= \sum_i u_i v_i.
 \end{align}
-Here it is difficult to discern a conceptual interpretation of each
-of the $\beta_j$ terms. As a result, it is also hard to make use of
-confidence intervals and hypothesis tests concerning them. However,
-the linear model framework is incredibly useful as it provides a
-computationally tractable way of estimating an arbitrarily complex
-relationship, by setting $p$ as large as possible, between our two
-variables. Of course, the size of the dataset will limit the ultimate
-complexity of the model, but this is true regardless of the particular
-approach taken. We will expand at length on this variable expansion
-method in Chapters~\ref{ch_smoothers} and \ref{ch_additive}.
+This form will be most useful for us, but its helpful to also visualize the
+dot product geometrically by its equivalent form:
+\begin{align}
+u \cdot v &= || u ||_2 \cdot || v ||_2 \cdot cos(\theta)
+\end{align}
+For the angle $\theta$ between the two vectors; of particular note, the dot
+product is zero for perpendicular vectors. Note that the Euclidean-norm can
+be defined by using the dot product of a vector with itself:
+\begin{align}
+v \cdot v &= \sum_i v_i v_i = || v ||_2^2
+\end{align}
+There is a lot of other very interesting and useful geometric intuition behind
+these definitions that we don't have time to get into right now. Hopefully
+some of these will arise as we work through the next few weeks and you will
+see how they apply to linear regression theory.
 
+\textbf{Gradient}
 
-\renewcommand{\section}[2]{}%
-\vspace{12pt}
-\textbf{References}
-\bibliography{bibfile}
+Assume that we have a real valued function $f$ defined on $n$-dimensional
+vectors. In other words:
+\begin{align}
+f: \mathbb{R}^n \rightarrow \mathbb{R}.
+\end{align}
+The gradient of $f$, denoted by $\nabla f$, is given by the vector of partial
+derivatives with respect to each component:
+\begin{align}
+\nabla f &= \begin{bmatrix} \frac{\partial f}{\partial v_1} \\
+ \frac{\partial f}{\partial v_2}  \\ \vdots \\
+ \frac{\partial f}{\partial v_n}  \end{bmatrix}
+\end{align}
+As with first derivatives, we can use the gradient to find the critical point
+of a multivalued function. Understanding gradient is very important for
+statistical learning. A typical workflow consists of computing the
+gradient of the loss function, $\nabla \mathcal{L}$, trying to set this to
+zero, and then evaluating the output. In today's lab you will work on deriving
+several important properties of the gradient function.
+
+\textbf{Matrices}
+
+Consider a function that takes as an input vectors of dimension $n$ and returns
+as an output vectors of dimension $m$:
+\begin{align}
+M: \mathbb{R}^m \rightarrow \mathbb{R}^n.
+\end{align}
+We say that $M$ is a linear function if we can take scalar quantities outside
+of the function,
+\begin{align}
+M(\alpha \cdot x) &= \alpha \cdot M(x), \quad x\in \mathbb{R}^m, \alpha \in \mathbb{R},
+\end{align}
+And we can split vector sums across the function,
+\begin{align}
+M(x + y) &= M(x) + M(y), \quad x, y\in \mathbb{R}^n.
+\end{align}
+It turns out that any such map can be described a grid of numbers with $n$ rows
+and $m$ columns:
+\begin{align}
+M &= \begin{bmatrix} m_{1,1} & m_{1,2} & \cdots & m_{1,m} \\
+m_{2,1} & \ddots & \cdots & m_{2,m} \\
+\vdots  & \vdots & \ddots & \vdots \\
+m_{n, 1} & m_{n, 2} & \cdots & m_{n, m}
+\end{bmatrix}
+\end{align}
+By defining:
+\begin{align}
+M(v)_j &= \sum_i m_{i,j} \cdot v_i \in \mathbb{R}.
+\end{align}
+You can think of this as taking the dot product of the $j$'th row of the matrix
+$M$ and the input vector $v$. Notice that we are abusing notation by letting
+$M$ be the grid of numbers \textit{and} the function. This is intentional
+because we will use the notation:
+\begin{align}
+M(v) = Mv \in \mathbb{R}^n, \quad v\in\mathbb{R}^m.
+\end{align}
+To represent the action of applying the function described by a matrix $M$ to
+a vector $v$.
+
+As with vectors, we could spend a whole year just talking about matrices.
+Rather than an exhaustive treatment, I want to instead quickly describe a
+few properties and notations that we will most useful. First, matrix multiplication
+is defined by function composition. The matrix product $A \cdot B$ is defined
+as the matrix that corresponds to applying the linear function defined by
+$B$ and then applying the linear function implied by $A$. Note that this can
+only be defined with the number of columns in $A$ matches the number of rows
+in $B$ (why?). If we set $C = A \cdot B$, then the following formula corresponds
+to this functional interpretation:
+\begin{align}
+c_{i, j} &= \sum_k a_{i, k} \cdot b_{k, j}
+\end{align}
+Where lower case letters refer to the elements in the corresponding uppercase
+matrices. The matrix product distributes,
+\begin{align}
+A (B + C) &= AB + AC,
+\end{align}
+But in general does not commute,
+\begin{align}
+AB \neq BA.
+\end{align}
+The identity matrix $I_n$ is given by ones on the diagonal and zeros elsewhere.
+For example
+\begin{align}
+I_3 &= \begin{bmatrix} 1 & 0 & 0 \\ 0 & 1 & 0 \\ 0 & 0 & 1 \end{bmatrix}.
+\end{align}
+For a square matrix $A$ we have:
+\begin{align}
+A I_n = I_n A = A.
+\end{align}
+Finally, the matrix inverse $A^{-1}$ of a square matrix is defined such that
+\begin{align}
+A^{-1} A = A A^{-1} = I_n,
+\end{align}
+However the matrix $A^{-1}$ is not guaranteed to exist.
+
+The final notation we need is the matrix transpose, denoted by $A^t$ and
+defined simply as flipping the matrix rows and columns. It has the property
+that it can be distributed within a summation:
+\begin{align}
+(A + B)^t &= A^t + B^t.
+\end{align}
+The transpose of a matrix product can also be distributed but the order of
+the matrices is flipped:
+\begin{align}
+(AB)^t &= B^t A^t.
+\end{align}
+The transpose is quite useful because we can use it to compute the dot product
+in an interesting way, as you will see in today's lab.
+
+% \renewcommand{\section}[2]{}%
+% \vspace{12pt}
+% \textbf{References}
+% \bibliography{bibfile}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
@@ -199,7 +255,83 @@ method in Chapters~\ref{ch_smoothers} and \ref{ch_additive}.
 \vspace*{0pt}
 
 \begin{enumerate}
-\item Here is a thing!
+\item Consider the vectors:
+\begin{align}
+v = \begin{bmatrix} 1 \\ 2 \\ 3 \end{bmatrix}, \quad
+u = \begin{bmatrix} 2 \\ 4 \\ 8 \end{bmatrix}.
+\end{align}
+Compute the values (a) $2 \cdot u$, (b) $u + v$, (c) the dot product $u \cdot v$,
+and (d) the squared norm $|| v ||_2^2$.
+\item Take the function $f: \mathbb{R}^3 \rightarrow \mathbb{R}$ defined by:
+\begin{align}
+f(x, y, z) &= x^2 + x \cdot y + sin(y) \cdot z.
+\end{align}
+Write down the function for $\nabla f$.
+\item Take the matrix $A$ defined as:
+\begin{align}
+A &= \begin{bmatrix} 1 & 1 & 2 \\ 3 & 0 & 1 \end{bmatrix}
+\end{align}
+What is the dimension of the output $Av$ using $v$ from question 1? Compute
+the value $Av$.
+\item Take the matrix $B$ defined as:
+\begin{align}
+B &= \begin{bmatrix} 2 & 3 \\ 7 & 1 \end{bmatrix}.
+\end{align}
+Compute the value of $C = B \cdot A$.
+\item Let $v \in \mathbb{R}^n$ be a vector of dimension $n$. We can actually
+view this vector as a matrix with $1$ column and $n$ rows. Similarly, $v^t$
+is a vector with $n$ columns and $1$ row. What is the value of $v^t v$ in terms
+of the components $v_i$? Can you write this in terms of the Euclidean-norm?
+\item Consider the function $g$ defined by:
+\begin{align}
+g(b) &= b^t x.
+\end{align}
+For $b, x \in \mathbb{R}^n$. Note that we consider $b$ to be variable but $x$
+to be fixed. Compute the partial derivative
+\begin{align}
+\frac{\partial g}{\partial b_k}.
+\end{align}
+\item Write the gradient $\nabla_b g$ (the subscript just reinforces that this
+is a function of $b$ and not $x$) in a compact format. In other words, do not
+just write the gradient component-wise.
+\item Let $U$ be a square matrix such that $Q^t = Q^{-1}$. We can any matrix
+with this property an \textit{orthogonal} matrix. An orthogonal matrix corresponds
+to a linear map that is simply a rotation of an $n$-dimensional space, a property
+that we will try to get some insight on here. Show that the Euclidean-norm is
+unchanged when applying $Q$. In other words, show that:
+\begin{align}
+||v||_2^2 = ||Q v ||_2^2.
+\end{align}
+Then, show that the dot product between $Qv$ and $Qu$ is the same as the dot
+product between $u$ and $v$. Use these two properties to argue that the action of
+$Q$ appears to behave like a rotation in $n$-dimensional space.
+\item Take a square matrix $A$ such that $A^t = A$ and define the function $g$
+where:
+\begin{align}
+g(b) &= b^t A b.
+\end{align}
+We will assume that $A$ is fixed and only $b$ is variable. Convince yourself
+that:
+\begin{align}
+g(b) &= \sum_i \sum_j a_{i,j} \cdot b_i \cdot b_j.
+\end{align}
+\item Now, compute the partial derivative
+\begin{align}
+\frac{\partial g}{\partial b_k}.
+\end{align}
+Note that is quite a bit more difficult that the other gradient questions I asked
+so please be careful. Also note that you can look ahead one question to check
+your answer.
+\item Finally, take the answer to your last question the prove that
+\begin{align}
+\nabla_b g (b) &= \nabla_b \left( b^t A b \right) = 2 A b.
+\end{align}
+\item (Extra) If we remove the assumption that $A$ is symmetric (i.e., $A = A^t$)
+then the more general form is given by:
+\begin{align}
+\nabla_b g (b) &= \nabla_b \left( b^t A b \right) = A b + A^t b.
+\end{align}
+Try to prove this more general form as well.
 \end{enumerate}
 
 \end{document}

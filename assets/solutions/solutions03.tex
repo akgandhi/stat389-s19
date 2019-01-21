@@ -1,0 +1,312 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[12pt,hidelinks]{article}
+
+% 1. Load LaTeX packages
+\usepackage{fontspec}
+\usepackage{geometry}
+\usepackage{lastpage}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{xunicode}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{amssymb}
+
+% 2. Define page dimensions and spacing
+\geometry{top=1in, bottom=1in, left=1in, right=2in, marginparsep=4pt,
+          marginparwidth=1in}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{12pt}
+
+% 3. Set header, footer, and bibliography
+\renewcommand{\headrulewidth}{0pt}
+\pagestyle{fancyplain}
+\fancyhf{}
+\lfoot{}
+\rfoot{page \thepage\ of \pageref{LastPage}}
+\bibliographystyle{acm}
+
+% 4. Set fonts for the document
+\defaultfontfeatures{Mapping=tex-text}
+\setromanfont{YaleNew}
+
+% 5. Define custom code for book environments and commands
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\pkg}[1]{\textbf{#1}}
+
+% 6. Define custom code for book environments and commands
+\definecolor{verbgray}{gray}{0.9}
+\definecolor{verbgray2}{gray}{0.975}
+
+\lstnewenvironment{rcode}{%
+  \lstset{backgroundcolor=\color{verbgray},
+  frame=single,
+  framerule=0pt,
+  basicstyle=\ttfamily,
+  keepspaces=true,
+  columns=fullflexible}}{}
+
+\lstnewenvironment{rres}{%
+  \lstset{backgroundcolor=\color{verbgray2},
+  frame=single,
+  framerule=0pt,
+  basicstyle=\ttfamily,
+  keepspaces=true,
+  columns=fullflexible}}{}
+
+% 7. Define numbering scheme for equations (only needed for handout).
+\numberwithin{equation}{section}
+\setcounter{section}{3}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+{\LARGE Lab Solutions 03}
+
+\vspace*{12pt}
+
+\textbf{1. Consider the vectors:}
+\begin{align}
+v = \begin{bmatrix} 1 \\ 2 \\ 3 \end{bmatrix}, \quad
+u = \begin{bmatrix} 2 \\ 4 \\ 8 \end{bmatrix}.
+\end{align}
+\textbf{Compute the values (a) $2 \cdot u$, (b) $u + v$, (c) the dot product $u \cdot v$,
+and (d) the squared norm $|| v ||_2^2$.}
+
+\vspace*{12pt}
+
+The values are given as follows:
+\begin{align}
+2 \cdot u &= \begin{bmatrix} 4 \\ 8 \\ 12 \end{bmatrix} \\
+u + v &= \begin{bmatrix} 3 \\ 6 \\ 11 \end{bmatrix} \\
+u \cdot v &= 1 \cdot 2 + 2 \cdot 4 + 3 \cdot 8 = 34 \\
+|| v ||_2^2 &= 1^2 + 2^2 + 3^2 = 14.
+\end{align}
+They are a straightforward application of the definitions in the notes.
+
+\vspace*{12pt}
+
+\textbf{2. Take the function $f: \mathbb{R}^3 \rightarrow \mathbb{R}$ defined by:}
+\begin{align}
+f(x, y, z) &= x^2 + x \cdot y + sin(y) \cdot z.
+\end{align}
+\textbf{Write down the function for $\nabla f$.}
+
+\vspace*{12pt}
+
+For this, we need to do the computation component-wise. We have:
+\begin{align}
+\frac{\partial f}{\partial x} &= 2x + y \\
+\frac{\partial f}{\partial y} &= y + cos(y) \cdot z \\
+\frac{\partial f}{\partial z} &= sin(y)
+\end{align}
+And the gradient comes from just taking these and putting them into a single
+vector:
+\begin{align}
+\nabla f &= \begin{bmatrix} 2x + y \\ y + cos(y) \cdot z \\ sin(y) \end{bmatrix}
+\end{align}
+
+\vspace*{12pt}
+
+\textbf{3. Take the matrix $A$ defined as:}
+\begin{align}
+A &= \begin{bmatrix} 1 & 1 & 2 \\ 3 & 0 & 1 \end{bmatrix}
+\end{align}
+\textbf{What is the dimension of the output $Av$ using $v$ from question 1? Compute
+the value $Av$.}
+
+\vspace*{12pt}
+
+The output will be a $2$-dimensional vector. The value is given by:
+\begin{align}
+Av &= \begin{bmatrix} 1\cdot1 + 1\cdot2 + 2\cdot3 \\ 3\cdot1 + 0\cdot2 + 1\cdot3 \end{bmatrix} \\
+&= \begin{bmatrix} 9 \\ 6 \end{bmatrix}.
+\end{align}
+
+\vspace*{12pt}
+
+\textbf{4. Take the matrix $B$ defined as:}
+\begin{align}
+B &= \begin{bmatrix} 2 & 3 \\ 7 & 1 \end{bmatrix}.
+\end{align}
+\textbf{Compute the value of $C = B \cdot A$.}
+
+\vspace*{12pt}
+
+\begin{align}
+C &= \begin{bmatrix} 11 & 2 & 7 \\ 10 & 7 & 15 \end{bmatrix}
+\end{align}
+
+\vspace*{12pt}
+
+\textbf{5. Let $v \in \mathbb{R}^n$ be a vector of dimension $n$. We can actually
+view this vector as a matrix with $1$ column and $n$ rows. Similarly, $v^t$
+is a vector with $n$ columns and $1$ row. What is the value of $v^t v$ in terms
+of the components $v_i$? Can you write this in terms of the Euclidean-norm?}
+
+\vspace*{12pt}
+
+The value of $v^t v$ is equal to the squared Euclidean-norm:
+\begin{align}
+v^t v &= \sum_i v_i \cdot v_i = \sum_i v_i^2 \\
+&= \left( \sqrt{\sum_i v_i^2} \right)^2 = || v ||_2^2.
+\end{align}
+
+\vspace*{12pt}
+
+\textbf{6. Consider the function $g$ defined by:}
+\begin{align}
+g(b) &= b^t x.
+\end{align}
+\textbf{For $b, x \in \mathbb{R}^n$. Note that we consider $b$ to be variable but $x$
+to be fixed. Compute the partial derivative}
+\begin{align}
+\frac{\partial g}{\partial b_k}.
+\end{align}
+
+\vspace*{12pt}
+
+The partial derivative is given by:
+\begin{align}
+\frac{\partial g}{\partial b_k} &= \frac{\partial}{\partial b_k} b^t x \\
+&= \frac{\partial}{\partial b_k} \sum_i b_i \cdot x_i \\
+&= x_k.
+\end{align}
+
+\vspace*{12pt}
+
+\textbf{7. Write the gradient $\nabla_b g$ (the subscript just reinforces that this
+is a function of $b$ and not $x$) in a compact format. In other words, do not
+just write the gradient component-wise.}
+
+\vspace*{12pt}
+
+The full gradient, then, is just given by the vector $x$:
+\begin{align}
+\nabla_b (b^t x) &= x.
+\end{align}
+One way to think of this is to consider the scalar case where the vector is just
+of dimension one. In this case, it is the equivalent of taking the derivative of
+a linear function.
+
+\vspace*{12pt}
+
+\textbf{8. Let $U$ be a square matrix such that $Q^t = Q^{-1}$. We can any matrix
+with this property an \textit{orthogonal} matrix. An orthogonal matrix corresponds
+to a linear map that is simply a rotation of an $n$-dimensional space, a property
+that we will try to get some insight on here. Show that the Euclidean-norm is
+unchanged when applying $Q$. In other words, show that:}
+\begin{align}
+||v||_2^2 = ||Q v ||_2^2.
+\end{align}
+\textbf{Then, show that the dot product between $Qv$ and $Qu$ is the same as the dot
+product between $u$ and $v$. Use these two properties to argue that the action of
+$Q$ appears to behave like a rotation in $n$-dimensional space.}
+
+\vspace*{12pt}
+
+The first result comes from:
+\begin{align}
+||Q v ||_2^2 &= v^t Q^t Q v \\
+&= v^t I_n v \\
+&= v^t v = ||v||_2^2.
+\end{align}
+The second is similar, with:
+\begin{align}
+(Qv) \cdot (Qu) &= (Qv)^t Qu \\
+&= v^t Q^t Q u \\
+&= v^t u = v \cdot u.
+\end{align}
+Both of these derivations are straightforward, but hopefully help you practice
+and see the benefit of the matrix form of the dot product.
+
+\vspace*{12pt}
+
+\textbf{9. Take a square matrix $A$ such that $A^t = A$ and define the function $g$
+where:}
+\begin{align}
+g(b) &= b^t A b.
+\end{align}
+\textbf{We will assume that $A$ is fixed and only $b$ is variable. Convince yourself
+that:}
+\begin{align}
+g(b) &= \sum_i \sum_j a_{i,j} \cdot b_i \cdot b_j.
+\end{align}
+
+\vspace*{12pt}
+
+This comes from just applying the definition of the matrix formula twice.
+
+\vspace*{12pt}
+
+\textbf{10. Now, compute the partial derivative}
+\begin{align}
+\frac{\partial g}{\partial b_k}.
+\end{align}
+\textbf{Note that is quite a bit more difficult that the other gradient questions I asked
+so please be careful. Also note that you can look ahead one question to check
+your answer.}
+
+\vspace*{12pt}
+
+Start by writing $b^t A b$ by isolating the terms that depend on $b_k$:
+\begin{align}
+b^t A b &= \sum_i \sum_j a_{i,j} \cdot b_i \cdot b_j \\
+&= a_{kk} b_k^2 + \sum_{i \neq k} a_{ik} b_i b_k + \sum_{j \neq k} a_{kj} b_k b_j +
+\text{(other terms w/o $b_k$)}.
+\end{align}
+Now, it is much easier to apply the partial derivative because we have split
+apart the quadratic, linear and constant terms:
+\begin{align}
+\frac{\partial}{\partial b_k} b^t A b &=
+\frac{\partial}{\partial b_k} (a_{kk} b_k^2) +
+\frac{\partial}{\partial b_k} (\sum_{i \neq k} a_{ik} b_i b_k) +
+\frac{\partial}{\partial b_k} (\sum_{j \neq k} a_{kj} b_k b_j) \\
+&= 2 a_{kk} \cdot b_k + \sum_{i \neq k} a_{ik} b_i + \sum_{j \neq k} a_{kj} b_j
+\end{align}
+I am going to simplify the equation here by grouping one $a_{kk} \cdot b_k$ with
+the first sum and another one with the second sum. You may not have actually
+done this until you go the next two questions:
+\begin{align}
+\frac{\partial}{\partial b_k} b^t A b &=
+\sum_{i} a_{ik} b_i + \sum_{j} a_{kj} b_j \\
+\end{align}
+
+\vspace*{12pt}
+
+\textbf{11. Finally, take the answer to your last question the prove that}
+\begin{align}
+\nabla_b g (b) &= \nabla_b \left( b^t A b \right) = 2 A b.
+\end{align}
+
+\vspace*{12pt}
+
+Using the simplified form of the partial derivatives, the result follows by
+noticing that we already have the result for the next equation:
+\begin{align}
+\nabla_b g (b) &= \nabla_b \left( b^t A b \right) = A b + A^t b.
+\end{align}
+The result for this question follows by setting $A = A^t$.
+
+\vspace*{12pt}
+
+\textbf{12. (Extra) If we remove the assumption that $A$ is symmetric (i.e., $A = A^t$)
+then the more general form is given by:}
+\begin{align}
+\nabla_b g (b) &= \nabla_b \left( b^t A b \right) = A b + A^t b.
+\end{align}
+\textbf{Try to prove this more general form as well.}
+
+\vspace*{12pt}
+
+I already showed this in the previous question. I split this question as optional
+because I thought it may be tricky to figure out that you need to add one copy of
+$a_{kk} \cdot b_k$ to one sum and another copy in the other sum.
+
+
+\end{document}
+

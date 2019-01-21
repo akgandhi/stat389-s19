@@ -1,0 +1,153 @@
+---
+title: "Class 04: Linear Regression and Normal Equations"
+output: html_document
+---
+
+### Setup
+
+Start by loading a few R packages that we will need for today's class:
+
+```{r}
+library(readr)
+library(ggplot2)
+library(dplyr)
+```
+
+Next, let’s load in a small dataset to work with today. This is a well-known
+statistics dataset that describes the fuel efficiency of various automobiles.
+
+```{r}
+cars <- read_csv("https://raw.githubusercontent.com/statsmaths/ml_data_ans/master/mpg.csv")
+```
+
+Today we are going to build linear regression models directly in R without
+(at least at first) the use of the `lm` function.
+
+### Making the model matrix
+
+In the notes today, and really for almost the entire semester, we will be
+starting with a matrix X that contains numeric variables that describe the
+known features that we want to use to make predictions. You'll notice that the
+data here, and most datasets you find in the wild, don't quite look like this
+yet. To go from the `tibble` object that we have stored as `cars` to a matrix
+object, we use the R function `model.matrix`. It is very flexible and provides
+a lot of useful functions that we will see in upcoming weeks.
+
+Specifically, the following code creates a model matrix using just the variables
+`displ` (engine size) and cyl (the number of cylinders in the engine):
+
+```{r}
+X <- model.matrix(~ displ +  cyl , data = cars)
+head(X)
+```
+
+Notice that R has added an intercept for us, which is quite helpful. The variable
+we want to predict is fuel efficiency in city driving. This can be grabbed by
+using the notation:
+
+```{r}
+y <- cars$cty
+head(y)
+```
+
+We now have the components to compute the regression vector beta, but in
+order to do this you'll need to know how to work with matrices in R.
+
+### Matrix operations in R
+
+Let's create two smaller matrices to work with:
+
+```{r}
+A <- matrix(c(1, 2, 3, 4, 5, 6), ncol = 3, byrow=TRUE)
+A
+```
+
+And
+
+```{r}
+B <- matrix(c(1, 1, 2, 5), ncol = 2, byrow=TRUE)
+B
+```
+
+To multiply two matrices in R, we use the symbol `%*%`:
+
+```{r}
+B %*% A
+```
+
+This also works if you have a vector and want to multiple it by a matrix:
+
+```{r}
+v <- c(4, 5, 6)
+A %*% v
+```
+
+To take the transpose of a matrix, we use the operator `t`:
+
+```{r}
+t(B)
+```
+
+And to create an inverse, use the function `solve`:
+
+```{r}
+solve(B)
+```
+
+That's really all you should need to apply what we saw in class to the data
+on the car fuel efficiency.
+
+### Applying ordinary least squares
+
+Compute the ordinary least squares solution from the data matrix and response
+vector we created above (and store it as an object named `beta`) using the
+matrix operations seen above:
+
+```{r}
+beta <- solve(t(X) %*% X) %*% t(X) %*% y
+beta
+```
+
+Now, produce a new object `yhat` that represents the predicted values from the
+linear regression:
+
+```{r}
+yhat <- X %*% beta
+head(yhat)
+```
+
+Using the function `mean`, compute the mean squared error of your predictions
+on the dataset:
+
+```{r}
+mean((yhat - y)^2)
+```
+
+Use the `lm` function to verify that your `beta` matches the solution given
+by R's function.
+
+```{r}
+lm(cty ~ displ +  cyl , data = cars)
+```
+
+### Indicator variables
+
+Make a new model matrix that also includes the class (`class`) of the car:
+
+```{r}
+X <- model.matrix(~ displ +  cyl + class, data = cars)
+head(X)
+```
+
+How does R convert the categorical variable `class` into numbers in the model
+matrix? Construct the ordinary least square solution and compare the mean
+squared error to the model that excludes class from the model:
+
+```{r}
+beta <- solve(t(X) %*% X) %*% t(X) %*% y
+yhat <- X %*% beta
+mean((yhat - y)^2)
+```
+
+Does it do better with the new variable? Is it possible that the means squared
+error could have gotten worse?

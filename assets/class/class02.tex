@@ -94,13 +94,13 @@ and the course going forward.
 Follow the script until you get to the section that asks you to return to
 these notes.
 \item Last time we started with the basic idea of statistical learning. We
-observe pairs $(x_i, y_i)$ and want to construct a function $f(x)$ from this
+observe pairs $(x_i, y_i)$ and want to construct a function $\widehat{f}(x)$ from this
 training data that does a good job of predicting future values of $y_i$ given
 new values of $x_i$. One of the simplest such models for predicting a
 continuous response $y$ is simple linear regression. Visually this corresponds
 to fitting a linear function $f$ to the data such that:
 \begin{align}
-f(x_i) &= a + b \cdot x_i.
+\widehat{f}(x_i) &= a + b \cdot x_i.
 \end{align}
 Where the parameters $a$ (the intercept) and $b$ (the intercept) are
 \textit{learned} from the data. Write down, symbolically, what the mean
@@ -108,11 +108,11 @@ squared loss function is of using the above $f$ to predict the values $y_i$.
 \item We are going to simplify things further by removing the intercept term
 $a$ from the model and assuming that we have only:
 \begin{align}
-f(x_i) &= b \cdot x_i.
+\widehat{f}(x_i) &= b \cdot x_i.
 \end{align}
 Taking the equation you had from the previous question, write down the loss
-function for the new value of $f$. Take the derivative with respect to $b$
-and set it equal to zero. Can you find a formula for $b$ that minimizes the
+function for the new value of $\widehat{f}$. Take the derivative with respect
+to $b$ and set it equal to zero. Can you find a formula for $b$ that minimizes the
 loss function?
 \item Taking the second derivative of the loss function, prove that you found
 a global minimizer in the previous question rather than a saddle point or

@@ -60,34 +60,131 @@
 
 % 7. Define numbering scheme for equations (only needed for handout).
 \numberwithin{equation}{section}
-\setcounter{section}{1}
+\setcounter{section}{4}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
 
-{\LARGE Handout 04: Normal Equations}
+{\LARGE Handout 04: Linear Regression and Normal Equations}
 
 \vspace*{18pt}
 
+Linear models are amongst the most well known and often-used methods for
+modeling data. They are employed to study the
+outcomes of patients in clinical trials, the price of financial
+instruments, the lifetimes of fruit flies, and many other
+responses from a wide range of fields.
+Why are linear models so popular? One important attribute is that
+linear models provide a concrete interpretation for all of their
+parameters. Take the two variable model for predicting housing sale
+prices as a function of total area (in square feet or square meters)
+and the number of bedrooms,
+\begin{align}
+\text{price}_i &= \beta_0 + \beta_1 \cdot \text{area}_i + \beta_2 \cdot \text{bedrooms}_i + \epsilon_i.
+\end{align}
+The parameters in this model tell us how much the response, price,
+changes when one of the predictor variables changes with the other
+variable held fixed. Mathematically, we can describe this precisely
+using partial derivatives
+\begin{align}
+\beta_1 &= \frac{\partial \, \text{price}}{\partial \, \text{area}}, \\
+\beta_2 &= \frac{\partial \, \text{price}}{\partial \, \text{bedrooms}}.
+\end{align}
+The model separates the effect of the total size of a house and the
+total number of bedrooms. This information is useful to real estate
+agents, homeowners, construction companies, and economists.
+Linear models also allow for the interpretation of categorical predictors
+through the use of indicator variables. If our housing price data also
+includes information about whether a given observation is from one of
+three neighborhoods, say `uptown,' `downtown,' and `suburbia,' we can
+define variables that are one when observation $i$ is in the given
+neighborhood and zero otherwise. A linear model with these variables
+may be written as
+\begin{align}
+\text{price}_i &= \beta_0 + \beta_1 \cdot \text{area}_i + \beta_2 \cdot \text{bedrooms}_i + \\ \nonumber
+              & \quad  \beta_3 \cdot \text{downtown}_i + \beta_4 \cdot \text{uptown}_i + \epsilon_i.
+\end{align}
+The parameter $\beta_3$ can still be viewed as a partial derivative, here
+representing the difference in the expected price between a house in suburbia
+and a house in the downtown neighborhood, if both are the same size and have
+the same number of bedrooms.
 
-\section{Ordinary least squares}
+The relatively simple form of linear models allows for a
+great deal of variation in the model assumptions. The $x_i$'s can
+be treated as fixed values, a \textit{fixed design}, or they may
+be considered to be random variables themselves, as in a
+\textit{random design} model. In biological
+applications the analysis usually depends on strict independence
+between the errors. In time series data, as commonly seen in finance or macroeconomics,
+the $\epsilon_i$ are often serially correlated with one another.
+Linear models such as the autoregressive integrated
+moving average (ARIMA) model and the autoregressive conditional heteroskedasticity
+(ARCH) model are used to model time series data with serial correlation
+structures. Longitudinal medical studies, where data is collected on
+multiple instances from the same cohort of patients over a period of
+time, may assume that the errors for observations from the
+same subject correlate differently than errors between different
+patients. Fixed, random, and mixed effects
+models---core statistical methods within certain sub-disciplines in
+the sciences and social sciences---are forms of linear models adapted
+to handle applications such as resampled data.
 
-\index{ordinary least squares}
+Linear models also benefit from a strong theoretical background. The
+standard estimators, which we will explore today,
+can be described in terms of weighted sums of the original data. Under
+weak assumptions, we can then draw on the central limit theorem and
+large sample theory to construct asymptotically valid confidence
+intervals and hypothesis testing frameworks. Importantly, most of this
+theory can be extended to the various extensions and complex assumptions
+often used in practice. Also, these theoretical tools are useful even
+when the primary task is one of prediction. Hypothesis tests aid in
+the process of deciding whether to add
+or delete a certain variable from a model. Confidence intervals, when
+combined with an estimate of the noise variance, are extensible to
+prediction intervals. These provide a range of likely values for newly
+observed data points, in addition to a singular `best' value. We
+will see several ways in which these estimates are useful in practice
+when building predictive models.
+
+The standard estimators for
+parameters in linear models can be calculated using relatively straightforward
+computational approaches. For this reason, linear models
+are often used in applications even when many of the aforementioned
+benefits do not directly apply. Notice that a linear model must be
+linear only relative to the $\beta$ terms. If we have pairs of data
+$(x_i, y_i)$ but believe that there is a non-linear relationship
+between $x$ and $y$, we could build the model
+\begin{align}
+y_i &= \beta_0 + \beta_1 \cdot x_i + \beta_2 \cdot x_i^2 + \cdots + \beta_p \cdot x_i^p + \epsilon_i.
+\end{align}
+Here it is difficult to discern a conceptual interpretation of each
+of the $\beta_j$ terms. As a result, it is also hard to make use of
+confidence intervals and hypothesis tests concerning them. However,
+the linear model framework is incredibly useful as it provides a
+computationally tractable way of estimating an arbitrarily complex
+relationship, by setting $p$ as large as possible, between our two
+variables. Of course, the size of the dataset will limit the ultimate
+complexity of the model, but this is true regardless of the particular
+approach taken. We will expand at length on this variable expansion
+in the coming months.
+
+\textbf{Ordinary least squares}
+
 Many of the advantages of linear models concern the beneficial properties
 of the standard estimators used to compute the unknown parameters
 $\beta_j$ from observed data. As a next step we would like to explore
 the definition of these estimators. To this aim, it will be useful to
 provide a compact matrix-based description of a linear model. Throughout
-this text, unless otherwise noted, we use a notation where $n$ is the
+my notes, unless otherwise noted, we use a notation where $n$ is the
 sample size, $p$ is the number of variables, $i$ is an index over the
 samples, and $j$ is the index over the variables. With this notation a
 complete general description of a linear model can be given by
 \begin{align}
-y_i &= \beta_1 \cdot x_{i,1} + \cdots + \beta_p \cdot x_{i,p} + \epsilon_i, \quad \forall\,  i = 1, \ldots, n.
+\widehat{y}_i &= \beta_1 \cdot x_{i,1} + \cdots + \beta_p \cdot x_{i,p}, \quad \forall\,  i = 1, \ldots, n.
 \end{align}
 Or simply
 \begin{align}
-y_i &= \sum_j \beta_j \cdot x_{i,j} + \epsilon_i, \quad \forall\,  i = 1, \ldots, n.
+\widehat{y}_i &= \sum_j \beta_j \cdot x_{i,j}, \quad \forall\,  i = 1, \ldots, n.
 \end{align}
 Notice that we do not need to include an explicit intercept term
 $\beta_0$. If one is required this can be included by setting
@@ -95,37 +192,51 @@ $x_{i,1}$ equal to one for every single observation $i$. Using
 matrix notation, we can write the linear model equation
 simultaneously for all observations as
 \begin{align}
-\left(\begin{array}{c}y_1\\ y_2\\ \vdots\\ y_n\end{array}\right) &=
+\left(\begin{array}{c}\widehat{y}_1\\ \widehat{y}_2\\ \vdots\\ \widehat{y}_n\end{array}\right) &=
   \left(\begin{array}{cccc}x_{1,1}&x_{2,1}&\cdots&x_{p,1}\\
                            x_{1,2}&\ddots&&x_{p,2}\\
                            \vdots&&\ddots&\vdots\\
                            x_{1,n}&x_{2,n}&\cdots&x_{p,n}\\\end{array}\right)
-  \left(\begin{array}{c}\beta_1\\ \beta_2\\ \vdots\\ \beta_p\end{array}\right) +
-  \left(\begin{array}{c}\epsilon_1\\ \epsilon_2\\ \vdots\\ \epsilon_n\end{array}\right)
+  \left(\begin{array}{c}\beta_1\\ \beta_2\\ \vdots\\ \beta_p\end{array}\right)
 \end{align}
-which can be compactly written in terms of a vector $y$ of the responses,
-a matrix $X$ of the predictor variables, a vector $\beta$ of the unknown
-parameters, and a vector $\epsilon$ of the errors
+which can be compactly written in terms of a vector $\widehat{y}$ of the responses,
+a matrix $X$ of the predictor variables, and a vector $\beta$ of the unknown
+parameters
 \begin{align}
-y &= X \beta + \epsilon.
+\widehat{y} &= X \beta.
 \end{align}
 Beyond compactness, this notation is also useful as many of the computational
 properties of linear models can be reduced to linear algebraic properties of
 the matrix $X$.
 
-\index{residual vector}
-It is desirable for an estimate $\widehat{\beta}$ of the unknown vector $\beta$
-to be able to explain as much variation as possible of the responses $y$. One way
-of viewing a linear model is as a decomposition of $y$ into a fixed, deterministic
-signal $X\beta$ and a stochastic random noise term $\epsilon$. Prediction and
-inference both benefit from making the signal term as dominant as possible. A
-good method for measuring this is to construct the vector of residuals
+Now, holding to the framework of predictive modelling, we want to know how to
+find a good set of values for $\beta$. To do this, we first need to define a loss
+function $\mathcal{L}$ that describes how well a prediction is able to predict
+values of $y$. Here we use mean squared error:
 \begin{align}
-r &= y - X\widehat{\beta}.
+\mathcal{L}(\widehat{y}, y) &= \sum_i (y_i - \widehat{y}_i)^2.
 \end{align}
-We can compare estimators by comparing the size of their residual vectors.
-A graphical representation of residuals from a linear model is given in
-Equation~\ref{lm_residuals}.
+Notice that we can re-write this in matrix form following:
+\begin{align}
+\mathcal{L} &= || y - \widehat{y} ||_2^2.
+\end{align}
+From which we can input our formula for $\widehat{y}$
+\begin{align}
+\mathcal{L} &= || y - X \beta ||_2^2. \label{lloss}
+\end{align}
+It is useful to also define the residual vector $r$, the thing to minimized
+in the loss function:
+\begin{align}
+r &= y - X\beta.
+\end{align}
+From here, the next steps are:
+\begin{enumerate}
+\item Expend the definition of the loss function.
+\item Take the gradient of $\mathcal{L}$ using the matrix formulae from the last notes.
+\item Set the gradient equal to zero and find the optimal value of $\beta$ from
+the training data.
+\end{enumerate}
+You will work through these steps today in the lab questions.
 
 \begin{figure}
 \includegraphics[width=\textwidth]{figures/lm_residuals.pdf}
@@ -133,120 +244,6 @@ Equation~\ref{lm_residuals}.
 from the linear model $y = \beta_0 + \beta_1 x$.}
 \label{lm_residuals}
 \end{figure}
-
-There are many choices for measuring the size of a regression vector,
-several of which lead to important, and distinct, estimators. The hinged loss,
-which penalizes positive residuals more than negative ones (or vice versa),
-leads to quantile regression.
-Metrics that penalize all residuals past some large threshold equally lead
-to robust regression techniques. Metrics
-that give each sample a weight $w_i$ depending on the specific values of the
-data $x_i$ can result in kernel regression (Section~\ref{sec_kernel_reg}),
-local regression (Section~\ref{sec_local_reg}) and are an important
-intermediate step in solving the generalized linear model problems that
-arise in Chapters~\ref{ch_glm}, \ref{ch_additive}, and \ref{ch_glmnet}.
-
-In this chapter, we will focus on the most popular choice of metric to
-measure the size of the regression vector: the sum of squared residuals.
-Minimizing the sum of squared residuals leads to the %ubiquitous
-\textit{ordinary least squares} (OLS) estimator. Why is this such a
-popular choice? For one thing, it allows us to write the metric in terms
-of an inner product or vector norm
-\begin{align}
-\sum_i r_i^2 &= r^t r = || r ||_2^2,
-\end{align}
-a form that is easy to work with both computationally and theoretically.
-The choice of the sum of squared residuals is also motivated by
-the maximum likelihood estimator when the $\epsilon_i$'s are independent
-and identically distributed random variables with a normal distribution
-having zero mean.
-
-\section{The normal equations}
-
-\index{normal equations}
-We now have a formal specification of the ordinary least squares
-estimator. Computing the estimator given a set of observed data
-requires solving an optimization problem. This particular optimization
-problem is unconstrained and has a continuous gradient, so an
-obvious first step would be to find the gradient of the least
-squares objective function with respect to the vector $b$
-\begin{align}
-\nabla_b \left[ || y - X b ||_2^2  \right] &= \nabla_b \left[ y^t y + b^t X^t X b - 2 y^t X b \right] \\
-&= 2 X^t X b - 2 X^t y. \label{normalish_equations}
-\end{align}
-A necessary condition for minimizing the objective function is to have
-the gradient equal to the zero vector, $\vec{0}$. If the Hessian matrix
-is positive definite at this solution, only then are we guaranteed to have a
-local minimum. The Hessian matrix here is constant everywhere, in
-that it does not depend on the value of $b$. Specifically, it is
-given by
-\begin{align}
-H\left( || y - X b ||_2^2  \right) &=  X^t X.
-\end{align}
-For a matrix $M$ to be positive definite, we need to have $z^t M z$ be
-strictly positive for any vector $z$ not equal to the zero vector.
-Notice that in our case this matrix product can be written as a
-vector norm
-\begin{align}
-z^t H\left( || y - X b ||_2^2  \right) z &=  z^t X^t X z \\
-&= || X z ||_2^2.
-\end{align}
-The squared $\ell_2$-norm is never negative and is only zero at the
-zero vector.
-
-\index{Hessian matrix}
-We see then that the Hessian is positive definite everywhere if
-and only if a non-zero vector $z$ does not exist such that $Xz$
-is the zero vector. This, in turn is true if and only if $X$ is not
-full rank. In this case, there are many possible values of $b$ that
-all attain the minimum least squares solution. Such a result should
-not surprise us. If we have such a $z$, then there are many parameter
-vectors $b$ that result in the exact same estimates for $y$ as there
-are for the true $\beta$
-\begin{align}
-X (\beta + a \cdot z) &= X \beta + a X z \\
-&= X \beta + \vec{0} \\
-&= X \beta.
-\end{align}
-In such cases it is
-possible to place constraints on the problem to formulate a related
-problem with a unique solution. For instance, Section~\ref{sec_ols_svd}
-illustrates how to find the unique OLS solution of minimal norm.
-Although minimum-norm least squares solutions are widely used in many science
-and engineering applications, it is more common in statistics to constrain
-solutions to rank-deficient problems in other ways. In particular, R's
-\code{lm} and \code{glm} solvers reformulate rank-deficient problems into
-full-rank ones by selecting a subset of columns using a heuristic procedure
-based on the model matrix column order. Other common subset selection
-approaches include the lasso (see Chapter~\ref{ch_glmnet}), which solves a
-penalized version of OLS.
-
-%In this case even if the noise vector $\epsilon$ is not present, we
-%still will not be able to accurately compute $\beta$. It therefore seems
-%justifiable that we assume, for now, that $X$ is a full column rank
-%matrix.
-
-Satisfied that we attain a local minimum wherever the gradient is zero,
-we return to Equation~\ref{normalish_equations}. Setting this
-equal to zero we get what are known as the \textit{normal equations},
-a linear system of equations of $p$ variables over $p$ unknowns
-expressed in matrix form as
-\begin{align}
-X^t X b &= X^t y. \label{norm_eq}
-\end{align}
-Solving systems like the normal equations for $b$ in a numerically stable and
-efficient manner is an important problem encountered repeatedly in this text.
-Linear systems of equations are generically solved by Gaussian
-elimination, but we will see that other more efficient and/or numerically
-stable methods based on the Cholesky, QR, or SVD decompositions can be
-used depending on context.
-
-
-
-\renewcommand{\section}[2]{}%
-\vspace{12pt}
-\textbf{References}
-\bibliography{bibfile}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
@@ -256,7 +253,32 @@ used depending on context.
 \vspace*{0pt}
 
 \begin{enumerate}
-\item Here is a thing!
+\item Write Equation~\ref{lloss} as an inner product. Expand and distribute
+the terms so that you have a loss function written a liner combination of
+matrix products.
+\item Convince yourself that the matrix $X^t X$ is equal to its own inverse.
+\item Use the gradient rules we had last time to compute the gradient of the
+loss function for linear regression.
+\item Set the gradient equal to zero. The result is known as the
+\textit{normal equations}. Isolate $\beta$ on one side using the matrix inverse.
+\item Now, with a known quantity for $\beta$, write down an equation for $\widehat{y}$.
+This should take the form:
+\begin{align}
+\widehat{y} &= H y
+\end{align}
+For some matrix $H$. The matrix here is called the ``hat'' matrix because it
+puts a hat on the quantities of y. Show that $H^2 = HH = H$.
+\item Assume that the ``true'' value of $y$ is given by:
+\begin{align}
+y &= X b + \epsilon
+\end{align}
+For some vector of random errors $\epsilon$. Plug this into your equation for
+$\beta$ and show that $\beta$ can be written as $b$ plus another term that should
+be small if the noise terms are small.
+\item Show that the residuals ($y - X\beta$) are perpendicular to the fitted
+values $\widehat{y}$. That is, show that the dot product between the two is
+zero. (Note: you can use the fact that $(X^tX)^{-1}$ is equal to its own transpose).
+\item Continue by following the notes in the \texttt{class04.Rmd}
 \end{enumerate}
 
 \end{document}

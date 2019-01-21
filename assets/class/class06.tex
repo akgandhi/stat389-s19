@@ -65,12 +65,169 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
 
-{\LARGE Handout 02: Statistical Learning}
+{\LARGE Handout 05: Solving the Normal Equations}
 
 \vspace*{18pt}
 
-\textbf{}
 
+
+\section{Solving least squares with the singular value decomposition} \label{sec_ols_svd}
+
+Many numerical methods for solving the normal equations rely on decomposing the
+data matrix $X$ or the Gram matrix $X^t X$ into factors using a variety of
+standard matrix decomposition algorithms. Here, we specifically make use
+of the singular value decomposition (SVD). Although more computationally
+intensive than some other techniques, the SVD gives us detailed insight into
+properties of the matrix useful for the development of numerically stable
+solution methods.
+
+\index{pseudoinverse}
+\index{singular value decomposition}
+\index{LAPACK}
+Let $X\in\mathbb{R}^{n \times p}$ and let $k=\min\{n, p\}$.  Then
+there exist matrices $U\in\mathbb{R}^{n \times k}$ and $V\in\mathbb{R}^{p\times
+k}$ with orthonormal columns $U^t U = V^t V = I$ such that
+\begin{equation}\label{SVD}
+U^t X V = \Sigma,
+\end{equation}
+where $\Sigma$ is a $k\times k$ diagonal matrix with non-negative entries
+$\sigma_1 \ge \sigma_2 \ge \cdots \ge \sigma_k \ge 0$ along its
+main diagonal. This is sometimes called the \textit{thin} SVD. In the case
+where $n > p$ it is possible to extend the matrix $U$
+into a square orthonormal $n\times n$ matrix $\bar{U}$
+by adding $n - p$ additional orthonormal columns.
+Similarly, when $n < p$ we can extend $V$ to a square
+orthonormal $p\times p$ matrix $\bar{V}$.
+The extended version is
+sometimes called the {\it full} SVD or just the SVD in many references and
+$\bar{U}^TX\bar{V}=\bar{\Sigma}$ results in an $n\times p$ rectangular diagonal
+matrix with the same main diagonal entries $\sigma_1 \ge \sigma_2 \ge \cdots \ge
+\sigma_k \ge 0$ as the thin version. The full SVD is especially useful
+for analysis, while the thin SVD is more commonly used in computation.
+
+The columns of $\bar{U}$ are called the {\it left singular vectors} of $X$ and
+the columns of $\bar{V}$ are called the {\it right singular vectors}.  The
+$\sigma_i$ are called {\it singular values} of $X$.  The SVD breaks matrix
+vector multiplication into three steps: rotation, scaling, then another
+rotation.  Consider an $n\times p$ matrix $X$ and its product $y$ with a vector
+$b\in\mathbb{R}^p$. Using the full SVD $y=Xb = \bar{U}\bar{\Sigma}\bar{V}^Tb$:
+\begin{enumerate}
+\item Let $\hat{b}=\bar{V}^T b\in\mathbb{R}^p$.
+Since $\bar{V}$ is an orthonormal matrix, $\hat{b}$ is simply a rotation of the
+vector $b$.
+\item Now let $s = \bar{\Sigma}\hat{b}\in\mathbb{R}^n$,
+scaling each entry of $\hat{b}$ by the corresponding $\sigma_i$.
+\item Finally let $y=\bar{U}s$, simply another rotation by the
+orthonormal matrix $\bar{U}$.
+\end{enumerate}
+The SVD reveals a lot of information about the structure of the matrix $X$.
+Step 2 tells us how much a vector can be scaled by $X$, and together with
+the rotations in steps
+1 and 3 about its range and null space.  The number of nonzero singular
+values of $X$ is equal to the \emph{rank} of $X$---the dimension of the range of
+$X$ (range means the set of all linear combinations of the columns of $X$, that is,
+the span of the columns of $X$). Section \ref{sec_condition_num}
+llustrates the sensitivity to noise of the solution of least squares problems
+involving $X$ in terms of the singular values of $X$.
+
+The SVD can be used to solve general ordinary least squares
+problems. The following result is adapted from Golub and Van Loan \cite[Theorem
+5.5.1]{golub2012matrix}, a recipe for computing the {\it unique} ordinary least
+squares solution of minimal Euclidean norm.
+Let $X$ be a real $n\times p$ matrix, with full SVD
+$\bar{U}^TX\bar{V} = \bar{\Sigma}$ using extended matrices
+$\bar{U} = [u_1, u_2, \ldots, u_n] \in\mathbb{R}^{n\times n}$,
+$\bar{\Sigma}\in\mathbb{R}^{n\times p}$, and
+$\bar{V} = [v_1, v_2, \ldots, v_p]\in\mathbb{R}^{p\times p}$,
+and let $r \le \min\{n, p\}$ be the rank of $X$. Then
+\begin{equation}\label{SVDLS}
+b_{LS} = \sum_{i=1}^r \frac{u_i^T y}{\sigma_i}v_i
+\end{equation}
+minimizes $\|X b - y\|^2$ and has the smallest Euclidean norm of all
+such minimizers.
+
+The proof of the above statement relies on properties of
+the orthogonal matrices produced by the SVD. For any vector $b\in\mathbb{R}^p$,
+\begin{align}
+\|X b - y\|^2 &= \|\bar{U}\bar{\Sigma}\bar{V}^T b - y\|^2 \qquad\,\,\,\,\,\,\, (\mbox{replacing X with its full SVD})\nonumber\\
+&= \|\bar{U}^T(\bar{U}\bar{\Sigma}\bar{V}^T b - y)\|^2 \,\,\,\,\,\, (\mbox{by \ref{norm_invariance}})\nonumber\\
+&= \|\bar{\Sigma}\bar{V}^T b - \bar{U}^Ty\|^2 \nonumber \\
+&= \sum_{i=1}^p(\sigma_iv_i^T b - u_i^Ty)^2 + \sum_{i=p + 1}^n(u_i^Ty)^2. \label{svd_residual}
+\end{align}
+The columns of $\bar{V}$ for an orthonormal basis of $\mathbb{R}^p$.
+Express the solution $b$ as a linear combination of the column vectors $v_i$,
+$b = \sum_{i=1}^p \gamma_i v_i$ (that is, $\gamma_i = v_i^Tb$).
+Since $\mathrm{rank}(X)=r$ then
+$\sigma_{r+1} = \sigma_{r+2} = \cdots = \sigma_p = 0$ and the corresponding
+coefficients $\gamma_i$ may take on any value without affecting the
+residual norm.  The specific choice
+$\gamma_{r+1} = \gamma_{r+2} = \cdots \gamma_p = 0$
+minimizes the norm of any possible solution $b$.
+Then the residual norm in Equation \ref{svd_residual} is minimized by setting
+the remaining coefficients
+$v_i^Tb = \gamma_i = (u_i^T y) v_i/ \sigma_i$ for $i=1, 2, \ldots, r$.
+
+
+
+
+\index{casl@\textbf{casl}!casl\_ols\_svd()}
+We can implement an algorithm to solve ordinary least squares using the SVD
+by calling R's function \code{svd}.
+\begin{rcode}
+# Compute OLS estimate using SVD decomposition.
+#
+# Args:
+#     X: A numeric data matrix.
+#     y: Response vector.
+#
+# Returns:
+#     Regression vector beta of length ncol(X).
+casl_ols_svd  <-
+function(X, y)
+{
+  svd_output <- svd(X)
+  r <- sum(svd_output$d > .Machine$double.eps)
+  U <- svd_output$u[, 1:r]
+  V <- svd_output$v[, 1:r]
+  beta <- V %*% (t(U) %*% y / svd_output$d[1:r])
+  beta
+}
+\end{rcode}
+To test this function, we will first create some random data and set a
+regression vector $\beta$.
+\begin{rcode}
+n <- 1e4; p <- 4
+X <- matrix(rnorm(n*p), ncol = p)
+beta <- c(1,2,3,4)
+epsilon <- rnorm(n)
+y <- X %*% beta + epsilon
+\end{rcode}
+From here, we compute the estimated $\widehat{\beta}$ from \code{casl\_ols\_svd}.
+\begin{rcode}
+beta_h_svd <- casl_ols_svd(X, y)
+beta_h_svd
+\end{rcode}
+\begin{rres}
+          [,1]
+[1,] 0.9816599
+[2,] 1.9938207
+[3,] 2.9941449
+[4,] 4.0062232
+\end{rres}
+The result closely reconstructs the true $\beta$, which was set to the
+vector $(1, 2, 3, 4)$. We should not expect to get the exact solution
+due to the presence of the noise vector \texttt{epsilon}. We can verify that this
+is the same solution given by R using the \code{lm} function and extracting
+the coefficients with \code{coef}.
+\begin{rcode}
+coef(lm(y ~ X - 1))
+\end{rcode}
+\begin{rres}
+       X1        X2        X3        X4
+0.9816599 1.9938207 2.9941449 4.0062232
+\end{rres}
+This result matches, at least to the 7th decimal place, with the result from
+our function.
 
 \renewcommand{\section}[2]{}%
 \vspace{12pt}

@@ -1,0 +1,11 @@
+--2019-01-21 15:54:05--  https://proxy.duckduckgo.com/iu/?u=http%3A%2F%2Fimage.slideserve.com%2F7233%2Fprobability-density-function-f-x-n.jpg
+Resolving proxy.duckduckgo.com (proxy.duckduckgo.com)... 50.16.241.130, 23.21.193.199
+Connecting to proxy.duckduckgo.com (proxy.duckduckgo.com)|50.16.241.130|:443... connected.
+HTTP request sent, awaiting response... 200 OK
+Length: unspecified [image/jpeg]
+Saving to: ‘index.html?u=http:%2F%2Fimage.slideserve.com%2F7233%2Fprobability-density-function-f-x-n.jpg’
+
+          index.htm     [<=>                 ]       0  --.-KB/s               index.html?u=http:%     [ <=>                ]  23.35K  --.-KB/s    in 0s      
+
+2019-01-21 15:54:06 (74.7 MB/s) - ‘index.html?u=http:%2F%2Fimage.slideserve.com%2F7233%2Fprobability-density-function-f-x-n.jpg’ saved [23906]
+
