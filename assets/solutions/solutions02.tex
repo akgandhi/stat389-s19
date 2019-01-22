@@ -175,13 +175,14 @@ it is a dummy variable:
 \sum_i x_i^2 &= \sum_j x_j^2.
 \end{align*}
 Now, with a different index, we can put the denominator \textit{inside} the
+other summation sign:
 \begin{align*}
-\widehat{b} &= \frac{\sum_i y_i x_i}{\sum_i x_i^2} \\
-&= \sum_i \left( y_i \cdot \frac{x_i}{\sum_j x_i^2} \right).
+\widehat{b} &= \frac{\sum_i y_i x_i}{\sum_j x_j^2} \\
+&= \sum_i \left( y_i \cdot \frac{x_i}{\sum_j x_j^2} \right).
 \end{align*}
 Defining weights given by:
 \begin{align*}
-w_i &= \frac{x_i}{\sum_j x_i^2}
+w_i &= \frac{x_i}{\sum_j x_j^2}
 \end{align*}
 We can then write:
 \begin{align*}
