@@ -39,10 +39,6 @@
 
 {\LARGE \textcolor{oiB}{Learning Objectives \hfill Exam 01}} \\
 
-The first exam will mostly be comprised of lab questions, primarily with only
-minor modifications or extensions. For your help preparing for the exam, here
-are the concrete learning objects for the first unit of the course:
-
 \begin{enumerate}
 \renewcommand\labelenumi{\textcolor{light}{\textbf{LO \theenumi.}}}
 
@@ -65,7 +61,7 @@ the interpretation of the coefficients.
 coefficients using calculus.
 
 \item Apply the matrix format of the least squares estimator and understand
-the notation for $y$, $X$, and $\beta$.
+the notation for $y$, $X$, $\beta$, and $\widehat{\beta}$.
 
 \item View a matrix as a linear transformation between $\mathbb{R}^n$ and
 $\mathbb{R}^m$ and matrix multiplication as function composition.
@@ -73,37 +69,29 @@ $\mathbb{R}^m$ and matrix multiplication as function composition.
 \item Understand the matrix transpose and inverse, its notation, and rules
 for applying these to matrix equations.
 
-\item Apply the inner product and Euclidean-norm as matrix products between
-column and row vectors.
-
 \item Derive the equations for the gradient of an inner product:
 \begin{align*}
 \nabla_\beta \left( a^t \beta \right) &= a
 \end{align*}
 And the gradient of a quadratic form:
 \begin{align*}
-\nabla_\beta \left( \beta^t A \beta \right) &= A^t \beta + A \beta.
+\nabla_\beta \left( \beta^t A \beta \right) &= \frac{1}{2} A^t \beta.
 \end{align*}
 
-\item Understand the concept of an orthogonal matrix and how it represents
-rotations in $n$-dimensional space.
+\item Derive the normal equations for the ordinary least squares estimator for
+multivariate linear regression.
 
-\item Apply the rules for gradient functions of vector and matrix forms to
-derive the normal equations.
+\item Understand the geometric interpretation of the singular value
+decomposition (SVD) and role of the singular values.
 
-\item Derive properties of the ordinary least squares estimator such as
-showing the residuals are perpendicular to the fitted values and that the
-``hat'' matrix is a projection operator.
+\item Apply the SVD to the normal equations to find a computationally stable
+solution to the ordinary least squares problem for linear regression.
 
-\item Understand and apply the expectation and variance operators on vector
-equations.
+\item Compute the SVD in R and use matrix methods to directly compute the
+ordinary least squares estimator.
 
-\item Derive formulae for the expected value and variance of $\beta$ under the
-assumption that $y = Xb + \epsilon$ with $\mathbb{E}\epsilon = 0$ and
-$\mathbb{V}ar(\epsilon) = \sigma^2 I_n$.
-
-\item Construct model matrices in R from a data frame object. Fit and evaluate
-the ordinary least squares estimator using R's functions for matrix manipulation.
+\item Apply the \verb|lm.fit| function to have R compute the ordinary least
+squares solution directly.
 
 \end{enumerate}
 
