@@ -231,7 +231,7 @@ r &= y - X\beta.
 \end{align}
 From here, the next steps are:
 \begin{enumerate}
-\item Expend the definition of the loss function.
+\item Expand the definition of the loss function.
 \item Take the gradient of $\mathcal{L}$ using the matrix formulae from the last notes.
 \item Set the gradient equal to zero and find the optimal value of $\beta$ from
 the training data.
@@ -254,9 +254,9 @@ from the linear model $y = \beta_0 + \beta_1 x$.}
 
 \begin{enumerate}
 \item Write Equation~\ref{lloss} as an inner product. Expand and distribute
-the terms so that you have a loss function written a liner combination of
+the terms so that you have a loss function written a linear combination of
 matrix products.
-\item Convince yourself that the matrix $X^t X$ is equal to its own inverse.
+\item Convince yourself that the matrix $X^t X$ is equal to its own transpose.
 \item Use the gradient rules we had last time to compute the gradient of the
 loss function for linear regression.
 \item Set the gradient equal to zero. The result is known as the
@@ -277,7 +277,7 @@ $\beta$ and show that $\beta$ can be written as $b$ plus another term that shoul
 be small if the noise terms are small.
 \item Show that the residuals ($y - X\beta$) are perpendicular to the fitted
 values $\widehat{y}$. That is, show that the dot product between the two is
-zero. (Note: you can use the fact that $(X^tX)^{-1}$ is equal to its own transpose).
+zero. (Note: you can use the fact that the transpose of $(X^tX)^{-1}$ is equal to itself).
 \item Continue by following the notes in the \texttt{class04.Rmd}
 \end{enumerate}
 

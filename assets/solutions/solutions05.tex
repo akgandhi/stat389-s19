@@ -170,8 +170,7 @@ This makes the computation fairly straightforward:
 \begin{align}
 \mathbb{V}ar(\epsilon) &= \sigma^2 \cdot I_n.
 \end{align}
-\textbf{For some fixed value $\sigma^2 > 0$. Derive a formula for the variance
-of the ordinary least squares estimate $\beta$.}
+\textbf{For some fixed value $\sigma^2 > 0$. What is the variance of $y$?}
 
 \vspace*{12pt}
 
@@ -191,9 +190,9 @@ Once again, considering $(X^tX)^{-1} X^t$ as a single matrix, and using the
 previous result, we have:
 \begin{align}
 \mathbb{V}ar(\beta) &= \mathbb{V}ar((X^t X)^{-1} X^t y) \\
-&= (X^t X)^{-1} X^t \cdot \mathbb{V}ar(y) \cdot \left[(X^t X)^{-1} X^t \right]^2 \\
-&= (X^t X)^{-1} X^t \cdot \sigma^2 \cdot I_n \cdot \left[(X^t X)^{-1} X^t \right]^2 \\
-&= \sigma^2 \cdot (X^t X)^{-1} X^t X (X^t X)^{-1} \\
+&= (X^t X)^{-1} X^t \cdot \mathbb{V}ar(y) \cdot \left[(X^t X)^{-1} X^t \right]^t \\
+&= (X^t X)^{-1} X^t \cdot \sigma^2 \cdot I_n \cdot \left[(X^t X)^{-1} X^t \right]^t \\
+&= \sigma^2 \cdot (X^t X)^{-1} X^t (X^t)^t (X^t X)^{-1} \\
 &= \sigma^2 \cdot (X^t X)^{-1} (X^t X) (X^t X)^{-1} \\
 &= \sigma^2 \cdot (X^t X)^{-1}
 \end{align}
