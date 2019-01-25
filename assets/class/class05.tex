@@ -65,125 +65,133 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
 
-{\LARGE Handout 05: Expectation and Variance}
+{\LARGE Handout 05: Singular Value Decomposition}
 
 \vspace*{18pt}
 
-This class does not require that you have had any prior probability theory
-and we certainly do not have time to discuss and derive all of the details
-that would be covered in a semester of MATH329. However, it will be very
-useful to complete our study of linear regression and to motivate the next
-steps if we can use some probability theory. The notes here lay out the basic
-points about random variables, expected values, and variance.
+Today we are going to work with a particular type of matrix factorization
+called the singular value decomposition. Start by assuming that we have a
+matrix $A$ with $n$ rows and $p$ columns such that $n \geq p$. The (thin)
+singular value decomposition, or SVD, is given by the matrix product:
+\begin{align}
+A &= U D V^t
+\end{align}
+With the following dimensions:
+\begin{align}
+A \in \mathbb{R}^{n \times p} \\
+U \in \mathbb{R}^{n \times p} \\
+D \in \mathbb{R}^{p \times p} \\
+V \in \mathbb{R}^{p \times p}
+\end{align}
+Furthermore, $D$ is a diagonal matrix with non-negative entries along the
+diagonal ordered from the largest to the smallest value:
+\begin{align}
+D &= \begin{bmatrix}
+\sigma_1 & 0 & \cdots & 0\\
+0 & \sigma_2 & \cdots & 0 \\
+0 & \vdots & \ddots & \vdots \\
+0 & 0 & \cdots & \sigma_p \end{bmatrix}, \quad \sigma_1 \geq \sigma_2 \geq \cdots \geq \sigma_p \geq 0.
+\end{align}
+The values $\sigma_k$ are called the \textit{singular values} of the matrix $A$.
+Also, $V$ is an orthogonal matrix such that (we showed in Handout 03 that this
+corresponds to a rotation):
+\begin{align}
+V^t V &= V V^t = I_p.
+\end{align}
+The matrix $U$ is not square, so it cannot be completely orthogonal, but its
+columns are orthogonal to one another so we have:
+\begin{align}
+U^t U &= I_p.
+\end{align}
+The singular value decomposition exists for any matrix, and so we can use it
+without any assumptions on the matrix we are working with. This has important
+geometric implications: \textbf{any} linear function can be written as a
+rotation, a fixed scaling of the components, and another rotation.
 
-\textbf{Random variables}
+\textbf{SVD and the Normal Equations}
 
-A random variable provides, conceptually, a way of representing uncertainty
-in a value. Instead of the fixed value (albeit often unknown) we typically
-denote with a variable such as $x$, a random variable has information about
-all of the possible outcomes it might take on and the chance that it takes
-on one of those values. It is possible to derive a more general theory, but
-today we will restrict ourselves to the case of random variables that take on
-real valued quantities.
+If we take the SVD of the data matrix $X$, we have
+\begin{align}
+X &= U D V^t.
+\end{align}
+Plugging this into the ordinary least squares estimator gives:
+\begin{align}
+\beta &= (X^t X)^{-1} X^t y \\
+&= (V D^t U^t U D V^t)^{-1} V D^t U^t y \\
+&= (V D (U^t U) D V^t)^{-1} V D U^t y \\
+&= (V D I_p D V^t)^{-1} V D U^t y \\
+&= (V D^2 V^t)^{-1} V D U^t y
+\end{align}
+By taking the fact that a diagonal matrix is its own transpose and using that
+$U^t U$ is equal to the identity. Note that $D^2$ is just a matrix with the
+squared singular values along the diagonal.
 
-The mathematical definition of a random variable $Z$ (in our restricted case)
-is given by a function $f(z)$---the \textit{density function}---that maps the
-real line into the unit interval and has an integral of $1$:
+Now, notice that the inverse of $V$ is $V^t$, and vice-versa. Further, the
+inverse of $D^{2}$ is equal to a diagonal matrix with the inverse of the
+squared singular values along the diagonal (this exists if we assume that
+$\sigma_1 > 0$). Therefore:
 \begin{align}
-f: \mathbb{R} \rightarrow [0, 1] \\
-\int_{-\infty}^{+\infty} f(z) dz = 1.
+(V D^2 V^t)^{-1} &= (V^{t})^{-1} D^{-2} V^{-1} = V D^{-2} V^t
 \end{align}
-How does this object represent randomness? We define the probability that the
-random variable is between two value $a$ and $b$ as the integral of the function
-between these two values.
+And we can further simplify the equation for the ordinary least squares
+estimator:
 \begin{align}
-Pr(a \leq Z \leq b) &= \int_a^b f(z) dz
+\beta &= (V D^2 V^t)^{-1} V D U^t y \\
+&= V D^{-2} V^t V D U^t y \\
+&= V D^{-2} D U^t y \\
+&= V D^{-1} U^t y.
 \end{align}
-You can see now why we force the total integral to be one: the random variable
-has to be somewhere.
+This gives us a compact way to write the ordinary least squares estimator.
+It is also far more numerically stable to use this formula to compute the
+estimate $\beta$ from a dataset. Most importantly, it will yield a lot of
+intuition for what makes some estimation tasks hard and motivate how we can
+(partially) address the most challenging regression problems.
 
-The expected value of a random variable describes the equivalent of the mean
-of the random variable. We can define the expected value as:
-\begin{align}
-\mathbb{E} Z = \int_{-\infty}^{+\infty} z\cdot f(z) dz.
-\end{align}
-You should convince yourself that this makes sense, for example by considering
-a random variable with a function $f$ that is symmetric around the origin (it
-should have an expected value of $0$, at least as long as the integral
-converges).
+\textbf{SVD in R}
 
-The expected value tells us where the center of the random variable is. The
-variance tells us how much a random variable varies around this center.
-Specifically, the variance is the expected squared value of the distance a
-random variable will be away from its mean. Or, symbolically:
-\begin{align}
-\mathbb{V}ar(Z) &= \mathbb{E} \left[ \left(Z - \mathbb{E} Z \right)^2 \right]
-\end{align}
-Whenever possible, when working with expected values and variances, you will
-want to avoid go back to the original definitions.  We will ultimately need
-vector version of these two operators, but to avoid moving too quickly here
-are some basic properties of the expected value and variance. Let $Z$ be a random
-variable and $a$ be a non-random variables. Then:
-\begin{align}
-\mathbb{E}(aZ) &= a \cdot \mathbb{E}(Z) \\
-\mathbb{E}(a + Z) &= a + \mathbb{E}(Z) \\
-\mathbb{V}ar(aZ) &= a^2 \cdot \mathbb{V}ar(Z) \\
-\mathbb{V}ar(a + Z) &= \mathbb{V}ar(Z)
-\end{align}
-It is much better---conceptually and theoretically---to treat these as
-operators that have particular properties.
-
-\begin{figure}
-\begin{center}
-\includegraphics[width=\textwidth]{figures/pdensfun.jpg}
-\end{center}
-\caption{Example of a probability density function.}
-\end{figure}
-
-\textbf{Random vectors}
-
-To actually make use of the probability theory given here in the theory of
-linear regression, we need to extend our definitions to random vectors. A random
-vector $\epsilon$ is just a vector where each component $\epsilon_i$ is itself
-a random variable:
-\begin{align}
-\epsilon &= \begin{bmatrix} \epsilon_1 \\ \vdots \\ \epsilon_n \end{bmatrix}.
-\end{align}
-And the expected value of a random vector is the vector of expected values of
-each component:
-\begin{align}
-\mathbb{E}\epsilon &= \begin{bmatrix} \mathbb{E}\epsilon_1 \\ \vdots \\ \mathbb{E}\epsilon_n \end{bmatrix}.
-\end{align}
-The variance of a random variable is a bit more involved. The variance is
-given by an $n$-by-$n$ matrix, the diagonal of which is a variance of each
-component. The off-diagonal quantities give the \textit{covariance} of the
-respective components. Specifically:
-\begin{align}
-\mathbb{V}ar(\epsilon)_{i,j} &= \mathbb{E} \left[ \left(\epsilon_i - \mathbb{E} \epsilon_i \right)
-\cdot \left(\epsilon_j - \mathbb{E} \epsilon_j \right) \right].
-\end{align}
-Two variables that have a covariance of zero are said to be \textit{uncorrelated}.
-The entire variance matrix can be written compactly using the transpose operator:
-\begin{align}
-\mathbb{V}ar(\epsilon) &= \mathbb{E} \left[ \left(\epsilon - \mathbb{E} \epsilon \right)
-\cdot \left(\epsilon - \mathbb{E} \epsilon \right)^t \right].
-\end{align}
-It is the formula that will be most helpful for us next week as we investigate
-statistical learning extensions of the linear model.
-
-It should be straightforward to see that the expected value of a vector equation
-behaves similarly to the scalar version. Let $\epsilon$ be a random vector,
-$v$ a non-random vector, and $A$ a non-random matrix. Then:
-\begin{align}
-\mathbb{E}(A \cdot \epsilon) &= A \cdot \mathbb{E}\epsilon \\
-\mathbb{E}(v + \epsilon) &= v + \mathbb{E}\epsilon
-\end{align}
-There are also two equivalent properties for the Variance operator:
-\begin{align}
-\mathbb{V}ar(v + \epsilon) &= \mathbb{V}ar(\epsilon)\\
-\mathbb{V}ar(A\epsilon) &= A \cdot \mathbb{V}ar(\epsilon) \cdot A^t
-\end{align}
-You will derive the last equations in today's lab.
+In R, you can create the singular value decomposition of a matrix using the
+function \texttt{svd}. To see this, let's construct some simulated data:
+\begin{rcode}
+set.seed(1)
+n <- 1e4; p <- 4
+X <- matrix(rnorm(n*p), ncol = p)
+b <- c(1,2,3,4)
+epsilon <- rnorm(n)
+y <- X %*% b + epsilon
+\end{rcode}
+Now, we take the singular value decomposition of the matrix. I will also
+explicitly extract out and save the matrices $U$ and $V$ as well as the singular
+values $sigma$:
+\begin{rcode}
+svd_output <- svd(X)
+U <- svd_output[["u"]]
+V <- svd_output[["v"]]
+sigma <- svd_output[["d"]]
+\end{rcode}
+Now, lets compute the ordinary least square matrix with this data:
+\begin{rcode}
+beta <- V %*% diag(1 / sigma) %*% t(U) %*% y
+beta
+\end{rcode}
+\begin{rres}
+          [,1]
+[1,] 0.9870134
+[2,] 1.9876739
+[3,] 3.0045489
+[4,] 4.0102080
+\end{rres}
+We can verify that this is equivalent to our old form of the estimator by:
+\begin{rcode}
+solve(t(X) %*% X) %*% t(X) %*% y
+\end{rcode}
+\begin{rres}
+          [,1]
+[1,] 0.9870134
+[2,] 1.9876739
+[3,] 3.0045489
+[4,] 4.0102080
+\end{rres}
+Notice that both are close to the value of \texttt{b} in the simulation.
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
@@ -193,29 +201,78 @@ You will derive the last equations in today's lab.
 \vspace*{0pt}
 
 \begin{enumerate}
-\item Assume that $Z$ is a random variable that only takes values between $0$
-and $5$. Any value in this range is equally likely to occur. Write down the
-formula for the density function $f$ that corresponds to this random variable.
-\item Without doing any calculations, what do you expect to be the expected
-value of $Z$ in the previous question?
-\item Using the formulae in the notes, show that your guess matches the mathematical
-definition of $\mathbb{E}Z$.
-\item Prove the equation given for $\mathbb{V}ar(AZ)$.
-\item Assume that we have a random variable $y$ defined in terms of a random
-variable $\epsilon$ such that:
+\item I showed you how to get a nice equation for $\beta$ in the ordinary
+least squares equation. Using the SVD of $X$, compute a compact formula for
+the values $\widehat{y} = X \beta$.
+\item We glossed over the case where one or more of the singular values is equal
+to zero. In this question I will show you why we cannot deal with this case
+in the construction of $\beta$. Let $V_p$ denote the last column of $V$ (these
+columns are called the \textit{right singular vectors}). Argue that:
 \begin{align}
-y &= X b + \epsilon.
+V^t V_p = \begin{bmatrix} 0 \\ 0 \\ \cdots \\ 0 \\ 1 \end{bmatrix}
 \end{align}
-Further assume that the expected value of the $\epsilon$ term is the zero vector
-(a vector with zeros in every component). Show that the expected value of the
-ordinary least squares equation for the estimate $\beta$ is equal to $b$.
-This means that $\beta$ is an \textit{unbiased} estimator of $b$.
-\item Using the same set-up as above, further assume that:
+Now, assume that $\sigma_p = 0$. Show that (Hint: expand X with the SVD):
 \begin{align}
-\mathbb{V}ar(\epsilon) &= \sigma^2 \cdot I_n.
+XV_p = 0.
 \end{align}
-For some fixed value $\sigma^2 > 0$. What is the variance of $y$?
-\item Finally, derive a formula for the variance of the ordinary least squares estimate $\beta$.
+Assume that we have a potential candidate $\beta$ for the regression vector.
+Show that the fitted values $\widehat{y}$:
+\begin{align}
+\widehat{y} &= X \beta = X (\beta + a \cdot V_p), \quad \forall a \in \mathbb{R}.
+\end{align}
+Explain why this implies that we cannot uniquely determine a value for $\beta$
+according the minimization of the loss function on the training data when
+$\sigma_1 = 0$.
+\item Let $X$ be a matrix with SVD equal to $UDV^t$ and $w$ be a
+$3$-dimensional vector with Euclidean norm equal to one:
+\begin{align}
+|| w ||_2^2 &= w^t w = \sum_k w_k^2 = w_1 + w_2 + w_3 = 1.
+\end{align}
+It is generally true that we can write the vector $w$ as a weighted sum of
+the columns of $V$:
+\begin{align}
+w &= \sum_k a_k \cdot V_k = a_1 V_1 + a_2 V_2 + a_3 V_3.
+\end{align}
+Argue that:
+\begin{align}
+\sum_k a_k^2 = a_1^2 + a_2^2 + a_3^2 = 1.
+\end{align}
+Then, show that (the middle step is a hint more than anything else):
+\begin{align}
+|| X w ||_2^2 &= || D V^t w ||_2^2 = a_1 \cdot \sigma_1 + a_2 \cdot \sigma_2 + a_3 \cdot \sigma_3 .
+\end{align}
+Note that all of these results are true in an arbitrary number of dimensions;
+I just set $p=3$ so that you could more easily make use of picture arguments.
+What do these properties this tell you geometrically about the matrix $X$ in
+terms of the singular values and right-singular vectors?
+
+% \item Let $A$ be a square $p$-by-$p$ matrix and consider the following system
+% of linear equations:
+% \begin{align}
+% y = A b.
+% \end{align}
+% In the typical set-up, we would be given $y$ and $A$ and are asked to solve for
+% the $p$ unknown quantities in $b$. Represent the SVD of $A$ as $U D V^t$ and
+% assume that the true $b$ is equal to a column of $V$ ($V_k$)... though we are
+% not allowed to use this information in solving the
+
+% \item Not all matrices have an inverse; in fact, according to our definitions,
+% it is not even possible for a non-square matrix to have an inverse. However,
+% there are generalizations of matrix inverses that can be applied more broadly.
+% Specifically, the Moore–Penrose inverse of the matrix $X$ is written as $X^{+}$
+% and given by:
+% \begin{align}
+% X^{+} &= V D^{-1} U^t
+% \end{align}
+% Where $UDV^t$ is the SVD of the matrix $X$. Note that we have shown that
+% $\beta = X^{+} y$. The Moore-Penrose inverse has the following four properties:
+% \begin{align}
+% X X^{+} X = X \\
+% X^{+} X X^{+} = X \\
+% (X X^{+})^{t} = X X^{+} \\
+% (X^{+} X)^{t} = X^{+} X \\
+% \end{align}
+% Prove that these four properties hold given our decomposition of the SVD.
 \end{enumerate}
 
 \end{document}

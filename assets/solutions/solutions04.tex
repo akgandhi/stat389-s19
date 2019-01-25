@@ -84,10 +84,10 @@ The loss function can be expanded as:
 &= y^t y + \beta^t X^t X \beta - \beta^t X^t y - y^t X \beta
 \end{align}
 Notice that all of these terms are scalar quantities, so we can replace the
-value $\beta^t X^t y$ with its transpose $y^t X \beta$. This simplifies the
+value $y^t X \beta$ with its transpose $\beta^t X^t y$. This simplifies the
 formula to:
 \begin{align}
-\mathcal{L} &= y^t y + \beta^t X^t X \beta - 2 y^t X \beta.
+\mathcal{L} &= y^t y + \beta^t X^t X \beta - 2 \beta^t X^t y.
 \end{align}
 
 \vspace*{12pt}
@@ -108,11 +108,18 @@ loss function for linear regression.}
 
 \vspace*{12pt}
 
-The gradient is given, using the results from last time, as:
+Assuming you have already made the substitution (see solution to question 1
+for justification):
 \begin{align}
-\nabla_\beta \mathcal{L} &= 2 X^t X \beta - 2 X^t y.
+y^t X \beta &= \beta^t X^t y
 \end{align}
-We already did the hard part last time.
+The gradient is given by using the results from last time to each component:
+\begin{align}
+\nabla_\beta \mathcal{L} &= \nabla_\beta \left[ y^t y + \beta^t X^t X \beta - 2 \beta^t X^t y \right]\\
+&= 2 X^t X \beta - 2 X^t y.
+\end{align}
+Notice that we can apply the rule for the gradient of $b^t A b$ by setting
+$A = (X^tX)$.
 
 \vspace*{12pt}
 
