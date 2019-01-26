@@ -215,7 +215,7 @@ Now, assume that $\sigma_p = 0$. Show that (Hint: expand X with the SVD):
 \begin{align}
 XV_p = 0.
 \end{align}
-Assume that we have a potential candidate $\beta$ for the regression vector.
+\item Assume that we have a potential candidate $\beta$ for the regression vector.
 Show that the fitted values $\widehat{y}$:
 \begin{align}
 \widehat{y} &= X \beta = X (\beta + a \cdot V_p), \quad \forall a \in \mathbb{R}.
@@ -224,27 +224,62 @@ Explain why this implies that we cannot uniquely determine a value for $\beta$
 according the minimization of the loss function on the training data when
 $\sigma_1 = 0$.
 \item Let $X$ be a matrix with SVD equal to $UDV^t$ and $w$ be a
-$3$-dimensional vector with Euclidean norm equal to one:
+$p$-dimensional vector with Euclidean norm equal to one:
 \begin{align}
-|| w ||_2^2 &= w^t w = \sum_k w_k^2 = w_1 + w_2 + w_3 = 1.
+|| w ||_2^2 &= w^t w = \sum_k w_k^2 = 1.
 \end{align}
 It is generally true that we can write the vector $w$ as a weighted sum of
 the columns of $V$:
 \begin{align}
-w &= \sum_k a_k \cdot V_k = a_1 V_1 + a_2 V_2 + a_3 V_3.
+w &= \sum_k a_k \cdot V_k.
+\end{align}
+I want you to show that $\sum_k a_k^2 = 1$. This is straightforward
+\textit{assuming that you approach the problem in a particular way}. Start
+by writing out $|| w ||_2^2$ as an inner product and expanding in the basis
+of $V$:
+\begin{align}
+1 = || w ||_2^2 = w^t w &= \left(\sum_k a_k \cdot V_k \right)^t \left(\sum_k a_k \cdot V_k \right) \\
+&= \left(\sum_k a_k \cdot V_k^t \right) \left(\sum_k a_k \cdot V_k \right)
+\end{align}
+Then, take the cross terms to write this as a double sum and simplify the
+result.
+\item Let $X$ be a matrix with SVD equal to $UDV^t$ and $w$ be a
+$p$-dimensional vector. Show that:
+\begin{align}
+|| X w ||_2^2 &= || D V^t w ||_2^2
+\end{align}
+In other words, the matrix $U$ does not effect the size of the product $X w$.
+\item Let $X$ be a matrix with SVD equal to $UDV^t$ and $w$ be a
+$p$-dimensional vector that we will write as:
+\begin{align}
+w &= \sum_k a_k \cdot V_k.
+\end{align}
+Show that:
+\begin{align}
+V^t w &= \begin{bmatrix} a_1 \\ a_2 \\ \vdots \\ a_p \end{bmatrix}.
+\end{align}
+And therefore, we have:
+\begin{align}
+D V^t w &= \begin{bmatrix} \sigma_1 \cdot a_1 \\ \sigma_2 \cdot a_2 \\ \vdots \\ \sigma_p \cdot a_p \end{bmatrix}
+\end{align}
+\item Using the set-up from the previous question, show that:
+\begin{align}
+|| X w ||_2^2 &= \sum_k a_k^2 \sigma_k^2.
+\end{align}
+\item Let $X$ be a matrix with SVD equal to $UDV^t$. Consider the $\ell_2$-ball
+given by all vectors with a Euclidean norm of $1$:
+\begin{align}
+B_p &= \left\{ v \in \mathbb{R}^p, \quad \text{s.t.} \, ||v||_2 = 1 \right\}.
 \end{align}
 Argue that:
 \begin{align}
-\sum_k a_k^2 = a_1^2 + a_2^2 + a_3^2 = 1.
+\min_{v \in B_p} \left\{ || X v ||_2^2 \right\} = \sigma_p^2
 \end{align}
-Then, show that (the middle step is a hint more than anything else):
+And
 \begin{align}
-|| X w ||_2^2 &= || D V^t w ||_2^2 = a_1 \cdot \sigma_1 + a_2 \cdot \sigma_2 + a_3 \cdot \sigma_3 .
+\max_{v \in B_p} \left\{ || X v ||_2^2 \right\} = \sigma_1^2.
 \end{align}
-Note that all of these results are true in an arbitrary number of dimensions;
-I just set $p=3$ so that you could more easily make use of picture arguments.
-What do these properties this tell you geometrically about the matrix $X$ in
-terms of the singular values and right-singular vectors?
+\item Finally, complete the questions in the file \texttt{class05.Rmd}.
 
 % \item Let $A$ be a square $p$-by-$p$ matrix and consider the following system
 % of linear equations:

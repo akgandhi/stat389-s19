@@ -1,0 +1,273 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[12pt,hidelinks]{article}
+
+% 1. Load LaTeX packages
+\usepackage{fontspec}
+\usepackage{geometry}
+\usepackage{lastpage}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{xunicode}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{amssymb}
+
+% 2. Define page dimensions and spacing
+\geometry{top=1in, bottom=1in, left=1in, right=2in, marginparsep=4pt,
+          marginparwidth=1in}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{12pt}
+
+% 3. Set header, footer, and bibliography
+\renewcommand{\headrulewidth}{0pt}
+\pagestyle{fancyplain}
+\fancyhf{}
+\lfoot{}
+\rfoot{page \thepage\ of \pageref{LastPage}}
+\bibliographystyle{acm}
+
+% 4. Set fonts for the document
+\defaultfontfeatures{Mapping=tex-text}
+\setromanfont{YaleNew}
+
+% 5. Define custom code for book environments and commands
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\pkg}[1]{\textbf{#1}}
+
+% 6. Define custom code for book environments and commands
+\definecolor{verbgray}{gray}{0.9}
+\definecolor{verbgray2}{gray}{0.975}
+
+\lstnewenvironment{rcode}{%
+  \lstset{backgroundcolor=\color{verbgray},
+  frame=single,
+  framerule=0pt,
+  basicstyle=\ttfamily,
+  keepspaces=true,
+  columns=fullflexible}}{}
+
+\lstnewenvironment{rres}{%
+  \lstset{backgroundcolor=\color{verbgray2},
+  frame=single,
+  framerule=0pt,
+  basicstyle=\ttfamily,
+  keepspaces=true,
+  columns=fullflexible}}{}
+
+% 7. Define numbering scheme for equations (only needed for handout).
+\numberwithin{equation}{section}
+\setcounter{section}{5}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+{\LARGE Lab Solutions 05}
+
+\vspace*{12pt}
+
+\textbf{1. I showed you how to get a nice equation for $\beta$ in the ordinary
+least squares equation. Using the SVD of $X$, compute a compact formula for
+the values $\widehat{y} = X \beta$.}
+
+\vspace*{12pt}
+
+This comes from just plugging in the SVD decomposition into the equation:
+\begin{align}
+\widehat{y} = X \beta &= X (V D^{-1} U^t) y \\
+&= (U D V^t) (V D^{-1} U^t) y \\
+&= U D V^t V D^{-1} U^t y \\
+&= U U^t y.
+\end{align}
+Note that the term $U U^t$ does \textbf{not} cancel.
+
+\vspace*{12pt}
+
+\textbf{2. We glossed over the case where one or more of the singular values is equal
+to zero. In this question I will show you why we cannot deal with this case
+in the construction of $\beta$. Let $V_p$ denote the last column of $V$ (these
+columns are called the \textit{right singular vectors}). Argue that:}
+\begin{align}
+V^t V_p = \begin{bmatrix} 0 \\ 0 \\ \cdots \\ 0 \\ 1 \end{bmatrix}
+\end{align}
+\textbf{Now, assume that $\sigma_p = 0$. Show that (Hint: expand X with the SVD):}
+\begin{align}
+XV_p = 0.
+\end{align}
+
+\vspace*{12pt}
+
+The first assertion comes because $V^t_k V_p$ is zero if $k\neq p$ and $1$ otherwise.
+That's why the last term is one ($k=p$) and the others are zero. Expanding $X$ with
+the SVD, we have:
+\begin{align}
+XV_p = U D V^t V_p = U D \begin{bmatrix} 0 \\ 0 \\ \cdots \\ 0 \\ 1 \end{bmatrix}
+= U \cdot \begin{bmatrix} 0 \\ 0 \\ \cdots \\ 0 \\ \sigma_p \end{bmatrix}.
+\end{align}
+Because $\sigma_p = 0$, this give $U$ times a vector of zeros, from which we get that
+$X V_p = 0$.
+
+\vspace*{12pt}
+
+\textbf{3. Assume that we have a potential candidate $\beta$ for the regression vector.
+Show that the fitted values $\widehat{y}$:}
+\begin{align}
+\widehat{y} &= X \beta = X (\beta + a \cdot V_p), \quad \forall a \in \mathbb{R}.
+\end{align}
+\textbf{Explain why this implies that we cannot uniquely determine a value for $\beta$
+according the minimization of the loss function on the training data when
+$\sigma_1 = 0$.}
+
+\vspace*{12pt}
+
+The equation follows with almost no work the last question because:
+\begin{align}
+X (\beta + a \cdot V_p) &= X \beta + a X V_p \\
+&= X \beta + 0 = X \beta.
+\end{align}
+Therefore the predictions $\widehat{y}$ are not changed if we add a multiple
+of the last singular vector $V_p$ to $\beta$. Therefore, there is no unique
+best $\beta$ under the loss function (we can always add $a V_p$ and get the
+same results).
+
+\vspace*{12pt}
+
+\textbf{4. Let $X$ be a matrix with SVD equal to $UDV^t$ and $w$ be a
+$p$-dimensional vector with Euclidean norm equal to one:}
+\begin{align}
+|| w ||_2^2 &= w^t w = \sum_k w_k^2 = 1.
+\end{align}
+\textbf{It is generally true that we can write the vector $w$ as a weighted sum of
+the columns of $V$:}
+\begin{align}
+w &= \sum_k a_k \cdot V_k.
+\end{align}
+\textbf{I want you to show that $\sum_k a_k^2 = 1$. This is straightforward
+assuming that you approach the problem in a particular way. Start
+by writing out $|| w ||_2^2$ as an inner product and expanding in the basis
+of $V$:}
+\begin{align}
+1 = || w ||_2^2 = w^t w &= \left(\sum_k a_k \cdot V_k \right)^t \left(\sum_k a_k \cdot V_k \right) \\
+&= \left(\sum_k a_k \cdot V_k^t \right) \left(\sum_k a_k \cdot V_k \right)
+\end{align}
+\textbf{Then, take the cross terms to write this as a double sum and simplify the
+result.}
+
+\vspace*{12pt}
+
+From the equation in the question we have:
+\begin{align}
+1 = || w ||_2^2 = w^t w &= \left(\sum_k a_k \cdot V_k \right)^t \left(\sum_k a_k \cdot V_k \right) \\
+&= \left(\sum_k a_k \cdot V_k^t \right) \left(\sum_k a_k \cdot V_k \right) \\
+&= \sum_j \sum_k a_k a_j V_k^t V_j
+\end{align}
+But this sum is zero if $k\neq j$ and is $1$ is $k=j$, so:
+\begin{align}
+\sum_j \sum_k a_k a_j V_k^t V_j &= \sum_k a_k a_k V_k^t V_k \\
+&= \sum_k a_k^2
+\end{align}
+And that is exactly what we wanted to show.
+
+\vspace*{12pt}
+
+\textbf{5. Let $X$ be a matrix with SVD equal to $UDV^t$ and $w$ be a
+$p$-dimensional vector. Show that:
+\begin{align}
+|| X w ||_2^2 &= || D V^t w ||_2^2
+\end{align}
+In other words, the matrix $U$ does not effect the size of the product $X w$.}
+
+\vspace*{12pt}
+
+By expanding the Euclidean norm, this follows quickly as:
+\begin{align}
+|| X w ||_2^2 &= w^t X^t X w\\
+&= w^t (U D V^t)^t (U D V) w \\
+&= w^t V D^t U^t U D V^t w \\
+&= w^t V D D V^t w \\
+&= (D V^t w)^t (D V^t w) \\
+&= ||D V^t w ||_2^2.
+\end{align}
+
+\vspace*{12pt}
+
+\textbf{6. Let $X$ be a matrix with SVD equal to $UDV^t$ and $w$ be a
+$p$-dimensional vector that we will write as:}
+\begin{align}
+w &= \sum_k a_k \cdot V_k.
+\end{align}
+\textbf{Show that:}
+\begin{align}
+V^t w &= \begin{bmatrix} a_1 \\ a_2 \\ \vdots \\ a_p \end{bmatrix}.
+\end{align}
+
+\vspace*{12pt}
+
+We can start by showing that:
+\begin{align}
+V^t w = V^t (\sum_k a_k \cdot V_k) &= \sum_k a_k V V_k \\
+&= \sum_k a_k \cdot \begin{bmatrix} 0 \\ 0 \\ \vdots \\ 1 \\ \vdots \\ 0 \end{bmatrix}
+= \begin{bmatrix} a_1 \\ a_2 \\ \vdots \\ a_p \end{bmatrix}.
+\end{align}
+Then, the second value directly follows by the definition of the matrix product:
+\begin{align}
+D V^t w &= \begin{bmatrix} \sigma_1 \cdot a_1 \\ \sigma_2 \cdot a_2 \\ \vdots \\ \sigma_p \cdot a_p \end{bmatrix}
+\end{align}
+
+\textbf{7. Using the set-up from the previous question, show that:}
+\begin{align}
+|| X w ||_2^2 &= \sum_k a_k^2 \sigma_k^2.
+\end{align}
+
+\vspace*{12pt}
+
+From the the previous two questions, we simply have:
+\begin{align}
+|| X w ||_2^2 &= || D V^t w ||_2^2 \\
+&= || \begin{bmatrix} \sigma_1 \cdot a_1 \\ \sigma_2 \cdot a_2 \\ \cdots \\ \sigma_p \cdot a_p \end{bmatrix} ||_2^2 \\
+&= \sum_k a_k^2 \sigma_k^2.
+\end{align}
+
+\vspace*{12pt}
+
+\textbf{8. Let $X$ be a matrix with SVD equal to $UDV^t$. Consider the $\ell_2$-ball
+given by all vectors with a Euclidean norm of $1$:}
+\begin{align}
+B_p &= \left\{ v \in \mathbb{R}^p, \quad \text{s.t.} \, ||v||_2 = 1 \right\}.
+\end{align}
+\textbf{Argue that:}
+\begin{align}
+\min_{v \in B_p} \left\{ || X v ||_2^2 \right\} = \sigma_p^2
+\end{align}
+\textbf{And}
+\begin{align}
+\max_{v \in B_p} \left\{ || X v ||_2^2 \right\} = \sigma_1^2.
+\end{align}
+
+\vspace*{12pt}
+
+Putting together the previous questions, we can write any $v \in \mathbb{R}^p$ as
+$\sum_k a_k V_k$ with $\sum_k a_k^2 = 1$. Also, then, $|| X v ||_2^2 = \sum a_k^2 \sigma_k^2$.
+This gives:
+\begin{align}
+\min_a \sum_k \sigma_k^2 \cdot a_k^2, \quad \text{s.t.} \sum_k a_k^2 = 1.
+\end{align}
+If the sum of the squared values is constrained to be one and we want to minimize
+a weighted sum of the singular values, this done by putting all of the weight on
+the smallest singular value. In other words, $v = V_p$. The exact same argument
+with the maximum yields the second result.
+
+\vspace*{12pt}
+
+\textbf{9. Finally, complete the questions in the file \texttt{class05.Rmd}.}
+
+\vspace*{12pt}
+
+
+
+
+\end{document}
+
