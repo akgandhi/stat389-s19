@@ -215,14 +215,15 @@ Now, assume that $\sigma_p = 0$. Show that (Hint: expand X with the SVD):
 \begin{align}
 XV_p = 0.
 \end{align}
-\item Assume that we have a potential candidate $\beta$ for the regression vector.
-Show that the fitted values $\widehat{y}$:
+\item Continuing with the last problem, assume that we have a potential
+candidate $\beta$ for the regression vector. Show that the fitted values
+$\widehat{y}$:
 \begin{align}
 \widehat{y} &= X \beta = X (\beta + a \cdot V_p), \quad \forall a \in \mathbb{R}.
 \end{align}
 Explain why this implies that we cannot uniquely determine a value for $\beta$
 according the minimization of the loss function on the training data when
-$\sigma_1 = 0$.
+$\sigma_p = 0$.
 \item Let $X$ be a matrix with SVD equal to $UDV^t$ and $w$ be a
 $p$-dimensional vector with Euclidean norm equal to one:
 \begin{align}

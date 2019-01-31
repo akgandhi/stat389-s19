@@ -158,7 +158,12 @@ result.}
 
 \vspace*{12pt}
 
-From the equation in the question we have:
+As a general rule, we can apply the following formula for the product of two
+sums:
+\begin{align}
+\left(\sum_k c_k\right) \times \left(\sum_j d_k \right) &= \sum_k \sum_k (c_k d_k).
+\end{align}
+Using this, from the equation in the question we have:
 \begin{align}
 1 = || w ||_2^2 = w^t w &= \left(\sum_k a_k \cdot V_k \right)^t \left(\sum_k a_k \cdot V_k \right) \\
 &= \left(\sum_k a_k \cdot V_k^t \right) \left(\sum_k a_k \cdot V_k \right) \\
@@ -208,7 +213,7 @@ V^t w &= \begin{bmatrix} a_1 \\ a_2 \\ \vdots \\ a_p \end{bmatrix}.
 
 We can start by showing that:
 \begin{align}
-V^t w = V^t (\sum_k a_k \cdot V_k) &= \sum_k a_k V V_k \\
+V^t w = V^t (\sum_k a_k \cdot V_k) &= \sum_k a_k V^t V_k \\
 &= \sum_k a_k \cdot \begin{bmatrix} 0 \\ 0 \\ \vdots \\ 1 \\ \vdots \\ 0 \end{bmatrix}
 = \begin{bmatrix} a_1 \\ a_2 \\ \vdots \\ a_p \end{bmatrix}.
 \end{align}
