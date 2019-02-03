@@ -209,8 +209,8 @@ Plugging this value into the equation for $\widehat{b}$, we have:
 \begin{align*}
 \widehat{b} &= \frac{\sum_i y_i x_i}{\sum_i x_i^2} \\
 &= \frac{\sum_i (b \cdot x_i + \epsilon_i) \cdot x_i}{\sum_i x_i^2} \\
-&= \frac{\sum_i b \cdot x_i^2}{\sum_i x_i^2} + \frac{\sum_i \epsilon_i \cdot x_i^2}{\sum_i x_i^2} \\
-&= b \cdot \frac{\sum_i x_i^2}{\sum_i x_i^2} + \frac{\sum_i \epsilon_i \cdot x_i^2}{\sum_i x_i^2} \\
+&= \frac{\sum_i b \cdot x_i^2}{\sum_i x_i^2} + \frac{\sum_i \epsilon_i \cdot x_i}{\sum_i x_i^2} \\
+&= b \cdot \frac{\sum_i x_i^2}{\sum_i x_i^2} + \frac{\sum_i \epsilon_i \cdot x_i}{\sum_i x_i^2} \\
 &= b + \sum_i \left( \epsilon_i \cdot \frac{x_i}{\sum_j x_j^2} \right).
 \end{align*}
 So $\widehat{b}$ is equal to the `true' slope $b$ plus some weighted sum of
