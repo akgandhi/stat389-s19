@@ -161,12 +161,13 @@ result.}
 As a general rule, we can apply the following formula for the product of two
 sums:
 \begin{align}
-\left(\sum_k c_k\right) \times \left(\sum_j d_k \right) &= \sum_k \sum_k (c_k d_k).
+\left(\sum_k c_k\right) \times \left(\sum_j d_j \right) &= \sum_k \sum_j (c_k d_j).
 \end{align}
 Using this, from the equation in the question we have:
 \begin{align}
 1 = || w ||_2^2 = w^t w &= \left(\sum_k a_k \cdot V_k \right)^t \left(\sum_k a_k \cdot V_k \right) \\
 &= \left(\sum_k a_k \cdot V_k^t \right) \left(\sum_k a_k \cdot V_k \right) \\
+&= \left(\sum_k a_k \cdot V_k^t \right) \left(\sum_j a_j \cdot V_j \right) \\
 &= \sum_j \sum_k a_k a_j V_k^t V_j
 \end{align}
 But this sum is zero if $k\neq j$ and is $1$ is $k=j$, so:
