@@ -65,125 +65,61 @@
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
 
-{\LARGE Handout 06: Expectation and Variance}
+{\LARGE Handout 06: Ridge Regression}
 
 \vspace*{18pt}
 
-This class does not require that you have had any prior probability theory
-and we certainly do not have time to discuss and derive all of the details
-that would be covered in a semester of MATH329. However, it will be very
-useful to complete our study of linear regression and to motivate the next
-steps if we can use some probability theory. The notes here lay out the basic
-points about random variables, expected values, and variance.
+On the last handout I asked to consider a regression problem with an estimated
+value for $\beta$ and a data matrix $X$ factorized using the SVD as $UDV^{t}$.
+Then, we considered the predictions from a new $\tilde{\beta}$ equal to $\beta$
+plus a multiple of the smallest right singular vector ($V_p$). This is given
+by:
+\begin{align}
+X(\tilde{\beta}) &= X(\beta + a V_p) \\
+&= X\beta + a X V_p \\
+&= X\beta + a \sigma_p.
+\end{align}
+In the lab questions, you assumed $\sigma_p=0$ and this shows that the predictions
+$\widehat{y}$ for $\beta$ are exactly equivalent to the predictions for $\tilde{\beta}$.
+What if $\sigma_p$ is positive but small? In this case the predictions are not
+exactly the same but they are still very difficult to distinguish. Under sufficient
+noise it is still nearly impossible to distinguish between these two solutions when
+$\sigma_p$ is small. This can make regression very difficult to perform because
+large datasets often have a smallest singular value that is quite small (more on
+this later).
 
-\textbf{Random variables}
+The fundamental problem here is that we are only the mean squared error as our
+loss function. Therefore, there is no easy way to distinguish between using
+$\beta$ and $\tilde{\beta}$. One solution is to modify the loss function to make
+it easier to distinguish between these two solutions. For example, here is the
+equation for ridge regression:
+\begin{align}
+\beta_{\lambda} &= \argmin_b \left\{ || y - Xb||_2^2 + \lambda ||b||_2^2 \right\}
+\end{align}
+For some constant $\lambda > 0$. It says that you want to minimize the errors
+in prediction, but with an additional cost associated with large values of $\beta$.
+This helps to distinguish between the many possible models and often does a much
+better job than the ordinary least squares estimator at predicting future values.
+You can derive a very elegant solution to the ridge regression, particular when
+you incorporate the SVD. I will have you derive this in the following lab questions.
 
-A random variable provides, conceptually, a way of representing uncertainty
-in a value. Instead of the fixed value (albeit often unknown) we typically
-denote with a variable such as $x$, a random variable has information about
-all of the possible outcomes it might take on and the chance that it takes
-on one of those values. It is possible to derive a more general theory, but
-today we will restrict ourselves to the case of random variables that take on
-real valued quantities.
+% \textbf{PCA}
 
-The mathematical definition of a random variable $Z$ (in our restricted case)
-is given by a function $f(z)$---the \textit{density function}---that maps the
-real line into the unit interval and has an integral of $1$:
-\begin{align}
-f: \mathbb{R} \rightarrow [0, 1] \\
-\int_{-\infty}^{+\infty} f(z) dz = 1.
-\end{align}
-How does this object represent randomness? We define the probability that the
-random variable is between two value $a$ and $b$ as the integral of the function
-between these two values.
-\begin{align}
-Pr(a \leq Z \leq b) &= \int_a^b f(z) dz
-\end{align}
-You can see now why we force the total integral to be one: the random variable
-has to be somewhere.
+% There is a closely related concept to ridge regression known as principal component
+% analysis. It also comes quite cleanly from the SVD decomposition, but is not
+% directly associated with predictive modelling. The question it attempts to answer
+% is: How can we visualize a matrix $X$ when $p$ is large? The idea is to capture
+% the variation in $X$ in a small number of dimensions; usually this is done in two
+% dimensions so that we can easily plot the dataset.
 
-The expected value of a random variable describes the equivalent of the mean
-of the random variable. We can define the expected value as:
-\begin{align}
-\mathbb{E} Z = \int_{-\infty}^{+\infty} z\cdot f(z) dz.
-\end{align}
-You should convince yourself that this makes sense, for example by considering
-a random variable with a function $f$ that is symmetric around the origin (it
-should have an expected value of $0$, at least as long as the integral
-converges).
-
-The expected value tells us where the center of the random variable is. The
-variance tells us how much a random variable varies around this center.
-Specifically, the variance is the expected squared value of the distance a
-random variable will be away from its mean. Or, symbolically:
-\begin{align}
-\mathbb{V}ar(Z) &= \mathbb{E} \left[ \left(Z - \mathbb{E} Z \right)^2 \right]
-\end{align}
-Whenever possible, when working with expected values and variances, you will
-want to avoid go back to the original definitions.  We will ultimately need
-vector version of these two operators, but to avoid moving too quickly here
-are some basic properties of the expected value and variance. Let $Z$ be a random
-variable and $a$ be a non-random variables. Then:
-\begin{align}
-\mathbb{E}(aZ) &= a \cdot \mathbb{E}(Z) \\
-\mathbb{E}(a + Z) &= a + \mathbb{E}(Z) \\
-\mathbb{V}ar(aZ) &= a^2 \cdot \mathbb{V}ar(Z) \\
-\mathbb{V}ar(a + Z) &= \mathbb{V}ar(Z)
-\end{align}
-It is much better---conceptually and theoretically---to treat these as
-operators that have particular properties.
-
-\begin{figure}
-\begin{center}
-\includegraphics[width=\textwidth]{figures/pdensfun.jpg}
-\end{center}
-\caption{Example of a probability density function.}
-\end{figure}
-
-\textbf{Random vectors}
-
-To actually make use of the probability theory given here in the theory of
-linear regression, we need to extend our definitions to random vectors. A random
-vector $\epsilon$ is just a vector where each component $\epsilon_i$ is itself
-a random variable:
-\begin{align}
-\epsilon &= \begin{bmatrix} \epsilon_1 \\ \vdots \\ \epsilon_n \end{bmatrix}.
-\end{align}
-And the expected value of a random vector is the vector of expected values of
-each component:
-\begin{align}
-\mathbb{E}\epsilon &= \begin{bmatrix} \mathbb{E}\epsilon_1 \\ \vdots \\ \mathbb{E}\epsilon_n \end{bmatrix}.
-\end{align}
-The variance of a random variable is a bit more involved. The variance is
-given by an $n$-by-$n$ matrix, the diagonal of which is a variance of each
-component. The off-diagonal quantities give the \textit{covariance} of the
-respective components. Specifically:
-\begin{align}
-\mathbb{V}ar(\epsilon)_{i,j} &= \mathbb{E} \left[ \left(\epsilon_i - \mathbb{E} \epsilon_i \right)
-\cdot \left(\epsilon_j - \mathbb{E} \epsilon_j \right) \right].
-\end{align}
-Two variables that have a covariance of zero are said to be \textit{uncorrelated}.
-The entire variance matrix can be written compactly using the transpose operator:
-\begin{align}
-\mathbb{V}ar(\epsilon) &= \mathbb{E} \left[ \left(\epsilon - \mathbb{E} \epsilon \right)
-\cdot \left(\epsilon - \mathbb{E} \epsilon \right)^t \right].
-\end{align}
-It is the formula that will be most helpful for us next week as we investigate
-statistical learning extensions of the linear model.
-
-It should be straightforward to see that the expected value of a vector equation
-behaves similarly to the scalar version. Let $\epsilon$ be a random vector,
-$v$ a non-random vector, and $A$ a non-random matrix. Then:
-\begin{align}
-\mathbb{E}(A \cdot \epsilon) &= A \cdot \mathbb{E}\epsilon \\
-\mathbb{E}(v + \epsilon) &= v + \mathbb{E}\epsilon
-\end{align}
-There are also two equivalent properties for the Variance operator:
-\begin{align}
-\mathbb{V}ar(v + \epsilon) &= \mathbb{V}ar(\epsilon)\\
-\mathbb{V}ar(A\epsilon) &= A \cdot \mathbb{V}ar(\epsilon) \cdot A^t
-\end{align}
-You will derive the last equations in today's lab.
+% Consider the SVD of a matrix $X$:
+% \begin{align}
+% X &= U D V^t.
+% \end{align}
+% The most important terms, in terms of the overall size of the map $X$, are
+% those corresponding with the largest singular values. To approximate this, we
+% can remove all but the largest $k$ singular values from d. Furthermore, in
+% visualization, the final rotation $V^t$
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \newpage
@@ -193,29 +129,66 @@ You will derive the last equations in today's lab.
 \vspace*{0pt}
 
 \begin{enumerate}
-\item Assume that $Z$ is a random variable that only takes values between $0$
-and $5$. Any value in this range is equally likely to occur. Write down the
-formula for the density function $f$ that corresponds to this random variable.
-\item Without doing any calculations, what do you expect to be the expected
-value of $Z$ in the previous question?
-\item Using the formulae in the notes, show that your guess matches the mathematical
-definition of $\mathbb{E}Z$.
-\item Prove the equation given for $\mathbb{V}ar(AZ)$.
-\item Assume that we have a random variable $y$ defined in terms of a random
-variable $\epsilon$ such that:
+\item Take the gradient of the ridge regression loss function and set it equal
+to zero. Get an equation for $\beta_{\lambda}$ in terms of $X$ and $y$. You may
+need to use the fact that $b^t b$ is equal to $b^t I_p b$ in this derivation.
+(Note: Do \textbf{not} yet use the SVD of $X$ here).
+\item The eigenvalue decomposition of a matrix writes a matrix as $Q^t \Lambda Q$ for
+a diagonal matrix $\Lambda$ (the entries are called the matrix eigenvalues) and an
+orthogonal matrix $Q$. Unlike the SVD, the eigenvalue decomposition only applies to
+square matrices and even then does not always exist. Show that the eigenvalues of
+$X^t X$ are equal to the squared singular values of $X$.
+\item I want to derive a formula for $\beta_{\lambda}$ in terms of the SVD of X;
+this is not a long derivation but does require a trick. Take the equation that you
+have already derived for $\beta_{\lambda}$; there should be an identity matrix in
+the formula. consider the SVD of $X$ as $UDV^t$. Write the identify matrix in the
+equation as $V^tV$, plug in the SVD for $X$, and simplify. You should be able to
+factor out some of the terms and are left with something very similar to equation
+we had for the ordinary leasts squares estimator.
+\item Understand that the ridge regression is equivalent to fitting ordinary
+least squares on a new matrix $\bar{X}$ where the singular values have been
+increased by a factor of $\lambda$. Given our argument about the problems with
+the smallest singular value, does it make sense that this change alleviates the
+problem of identifiability?
+\item Let's somewhat switch gears here and consider a specific example problem.
+Let $p=2$ and assume that the first column of $X$ ($X_1$) can be written as:
 \begin{align}
-y &= X b + \epsilon.
+X_1 = \alpha + X_2, \quad \alpha \in \mathbb{R}^n
 \end{align}
-Further assume that the expected value of the $\epsilon$ term is the zero vector
-(a vector with zeros in every component). Show that the expected value of the
-ordinary least squares equation for the estimate $\beta$ is equal to $b$.
-This means that $\beta$ is an \textit{unbiased} estimator of $b$.
-\item Using the same set-up as above, further assume that:
+Where $\alpha$ is a small noise vector. So, $X_1$ and $X_2$ are very similar to
+one another. Write an equation for the value $X b$, factoring in terms of $\alpha$
+and $X_2$ (there should not be any $X_1$ left in the equation). Then, assume that
+we have data generated by:
 \begin{align}
-\mathbb{V}ar(\epsilon) &= \sigma^2 \cdot I_n.
+y &= X_2 + \text{noise}
 \end{align}
-For some fixed value $\sigma^2 > 0$. What is the variance of $y$?
-\item Finally, derive a formula for the variance of the ordinary least squares estimate $\beta$.
+Where the noise is not too large. Convince yourself that all of the following
+values of $b$ produce a reasonable estimate for $\widehat{y} = X b$:
+\begin{align}
+b &= \begin{bmatrix} 0 \\ 1 \end{bmatrix} \\
+b &= \begin{bmatrix} 1 \\ 0 \end{bmatrix} \\
+b &= \begin{bmatrix} -1 \\ 2 \end{bmatrix} \\
+b &= \begin{bmatrix} -100 \\ 101 \end{bmatrix}
+\end{align}
+What do you think is the approximate value of $\beta_\lambda$ for ridge
+regression for a small value of $\lambda$ assuming the noise vector and $\alpha$
+are also both small?
+\item For the previous question, can you guess a plausible value for $V_p$
+(the last left singular) of the matrix $X$? Look back at handout 5, question 3,
+for a hint.
+\item In the following final questions, we are going to consider a dataset
+where:
+\begin{align}
+X^t X &= 1_p \cdot n.
+\end{align}
+There is nothing you need to compute here, but make sure that you understand:
+(a) why it makes sense to include the $n$ on the right-hand side, and (b) why
+it makes sense that we say in this case that the columns of $X$ are uncorrelated.
+\item Taking $X^t X = 1_p \cdot n$, what is the value of the ordinary least
+squares estimator? Can you explain exactly what a particular component $\beta_k$
+is in terms of an inner product?
+\item Again taking $X^t X = 1_p \cdot n$, write the ridge regression vector
+$\beta_\lambda$ as a function of just $n$, $\lambda$, and the OLS solution $\beta$.
 \end{enumerate}
 
 \end{document}
