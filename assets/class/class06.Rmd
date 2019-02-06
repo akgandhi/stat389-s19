@@ -1,0 +1,145 @@
+---
+title: "Class 06: Ridge Regression"
+output: html_document
+---
+
+## The genlasso package
+
+The package that we will use for ridge regession---as well as lasso
+regression, logistic regression, and the elastic net---is called **glmnet**.
+Run the code here to check that you have the package and, if not, install it:
+
+```{r, message=FALSE}
+if (!require("glmnet"))
+{
+  install.packages("glmnet")
+}
+```
+
+Then you should be ready to go for the next few class periods.
+
+```{r, message=FALSE}
+library(readr)
+library(dplyr)
+library(glmnet)
+library(ggplot2)
+theme_set(theme_minimal())
+```
+
+## Ridge regression
+
+Today we will use a dataset from a bike-sharing program in Washington D.C.
+The prediction task is to learn how many bikes will be rented on a particular
+day based on weather and time variables.
+
+```{r, message=FALSE}
+bikes <- read_csv("https://statsmaths.github.io/ml_data/bikes.csv")
+bikes
+```
+
+Now, I will make a model matrix and response vector, but this time with a larger set of
+variables. I will add the term `-1` to the formula to stop R from adding an intercept 
+because the **glmnet** package will do that automatically for us. I also use `*` (multiplication)
+to include all of the cross-terms. This creates a much larger matrix `X` that is more
+condusive to showing the benefits of using ridge regression:
+
+```{r}
+y <- bikes$count
+X <- model.matrix(~ -1 + season * year * workingday * weather * temp * humidity * windspeed,
+                  data = bikes)
+dim(X)
+```
+
+Now, we will split out the data into a training and validation (what we are using as our
+test set):
+
+```{r}
+y_train <- y[bikes$train_id == "train"]
+y_valid <- y[bikes$train_id == "valid"]
+X_train <- X[bikes$train_id == "train",]
+X_valid <- X[bikes$train_id == "valid",]
+```
+
+Now, to run the ridge regression all we need is call the function `glmnet` and
+make sure to specify `alpha=0` (otherwise, it would use a different algorithm
+call lasso regression, which we will see soon). We can also specify the value
+of lambda. The `coef` function takes the model and shows us the predicted value
+of $$\beta_\lambda$$:
+
+```{r}
+model <- glmnet(X_train, y_train, alpha = 0, lambda = 1)
+as.numeric(coef(model))
+```
+
+We can compare this to the ordinary least squares by simply setting $\lambda = 0$.
+
+```{r}
+beta_ridge <- as.numeric(coef(glmnet(X_train, y_train, alpha = 0, lambda = 1)))
+beta_ols <- as.numeric(coef(glmnet(X_train, y_train, alpha = 0, lambda = 0)))
+qplot(beta_ridge, beta_ols) +
+  geom_abline(slope = 1, intercept = 0, linetype="dashed") +
+  scale_x_continuous(limits = range(c(beta_ridge[-1], beta_ols[-1])))
+```
+
+Notice that the values are reasonably correlated and generally (but not always) small
+in the ridge regression compared to the OLS regression. If we make lambda much larger,
+now equal to 5000, you can see that the values in the regression vector all start converging
+to zero:
+
+```{r}
+beta_ridge <- coef(glmnet(X_train, y_train, alpha = 0, lambda = 5000))
+beta_ols <- coef(glmnet(X_train, y_train, alpha = 0, lambda = 0))
+qplot(beta_ridge[-1], beta_ols[-1]) +
+  geom_abline(slope = 1, intercept = 0, linetype="dashed") +
+  scale_x_continuous(limits = range(c(beta_ridge[-1], beta_ols[-1])))
+```
+
+## Cross-validation
+
+How do we pick a good value for lambda when doing prediction tasks? A common
+method is called k-fold cross validation:
+
+1. Split observations in the dataset into k buckets.
+2. Fit the model on all of the data in buckets 2-k for several values of $$\lambda$$.
+3. Use this model to predict values in bucket k.
+4. Repeat for all of the other buckets (remove just one bucket of data, fit model, and predict on the left-out set).
+5. Use the value of lambda that best predicts the data across all of the buckets.
+
+Conveniently, the R package has a simple way of doing cross validation using the
+`cv.glmnet` function. Plotting the model shows a curve of how good each value of
+$$\lambda$$ performs across all of the buckets:
+
+```{r}
+model <- cv.glmnet(X_train, y_train, alpha = 0)
+plot(model)
+```
+
+What's the best value for lambda according to cross-validation?
+
+```{r}
+model$lambda.1se
+```
+
+## Comparing the models
+
+Here is the code to see how well (in terms of the mean squared error) the
+ordinary least squares does on the training and validation sets:
+
+```{r}
+model_ols <- glmnet(X_train, y_train, alpha = 0, lambda = 0)
+y_hat <- predict(model_ols, newx = X, s = 0)
+sqrt(tapply((y - y_hat)^2, bikes$train_id, mean))
+```
+
+Now, how about the cross-validated model:
+
+```{r}
+model <- cv.glmnet(X_train, y_train, alpha = 0)
+y_hat <- predict(model, newx = X, s = model$lambda.1se)
+sqrt(tapply((y - y_hat)^2, bikes$train_id, mean))
+```
+
+Notice that the penalty makes the model fit worse on the training set
+by generalizes better to new datasets.
+
+
