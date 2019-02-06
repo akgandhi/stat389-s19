@@ -64,7 +64,7 @@ Now, to run the ridge regression all we need is call the function `glmnet` and
 make sure to specify `alpha=0` (otherwise, it would use a different algorithm
 call lasso regression, which we will see soon). We can also specify the value
 of lambda. The `coef` function takes the model and shows us the predicted value
-of $$\beta_\lambda$$:
+of $\beta_\lambda$:
 
 ```{r}
 model <- glmnet(X_train, y_train, alpha = 0, lambda = 1)
@@ -100,14 +100,14 @@ How do we pick a good value for lambda when doing prediction tasks? A common
 method is called k-fold cross validation:
 
 1. Split observations in the dataset into k buckets.
-2. Fit the model on all of the data in buckets 2-k for several values of $$\lambda$$.
+2. Fit the model on all of the data in buckets 2-k for several values of $\lambda$.
 3. Use this model to predict values in bucket k.
 4. Repeat for all of the other buckets (remove just one bucket of data, fit model, and predict on the left-out set).
 5. Use the value of lambda that best predicts the data across all of the buckets.
 
 Conveniently, the R package has a simple way of doing cross validation using the
 `cv.glmnet` function. Plotting the model shows a curve of how good each value of
-$$\lambda$$ performs across all of the buckets:
+$\lambda$ performs across all of the buckets:
 
 ```{r}
 model <- cv.glmnet(X_train, y_train, alpha = 0)
