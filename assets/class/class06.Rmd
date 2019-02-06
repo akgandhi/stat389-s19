@@ -109,6 +109,10 @@ Conveniently, the R package has a simple way of doing cross validation using the
 `cv.glmnet` function. Plotting the model shows a curve of how good each value of
 $\lambda$ performs across all of the buckets:
 
+```{r, echo=FALSE}
+set.seed(1)
+```
+
 ```{r}
 model <- cv.glmnet(X_train, y_train, alpha = 0)
 plot(model)
