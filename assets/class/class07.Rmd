@@ -1,0 +1,130 @@
+---
+title: "Class 07: Logistic Regression"
+output: html_document
+---
+
+```{r, message=FALSE}
+library(readr)
+library(dplyr)
+library(glmnet)
+library(ggplot2)
+theme_set(theme_minimal())
+```
+
+## Dataset
+
+Today we will use a dataset from the nba. Each row is a shot that was taken and
+the goal is to predict whether or not the player made the shot (fgm=1) or not (fgm=0).
+
+```{r, message=FALSE}
+nba <- read_csv("https://statsmaths.github.io/ml_data/nba_shots.csv")
+nba
+```
+
+Here is the code to create a straight-forward data matrix for the training and validation
+sets:
+
+```{r}
+y <- nba$fgm
+X <- model.matrix(~ shot_clock + shot_dist + dribbles + touch_time,
+                  data = nba)
+y_train <- y[nba$train_id == "train"]
+y_valid <- y[nba$train_id == "valid"]
+X_train <- X[nba$train_id == "train",]
+X_valid <- X[nba$train_id == "valid",]
+```
+
+### Logistic regression
+
+I want you to use gradient descent to calculate the logistic regression vector. Most
+of the code is written out for you, but you'll need to add in the correct equation
+for the gradient:
+
+```{r}
+rho <- 0.01                     # learning rate
+beta <- rnorm(ncol(X_train))    # a starting point; all zeros
+n_iter <- 5000                  # number of times the algorithm will run
+
+for (iter in (seq_len(n_iter) - 1))
+{
+  p <- exp(X_train %*% beta) / (1 + exp(X_train %*% beta))
+  grad <- NULL # put your formula for the gradient in here
+  beta <- beta - rho * grad / nrow(X_train)
+
+  if ((iter %% 100 == 0))
+  {
+    loss <- sum(log(1 + exp(X_train %*% beta)) - y_train * (X_train %*% beta))
+    cat(sprintf("Iteration: %05d; Loss: %05.02f\n", iter, loss))
+  }
+}
+```
+
+You should see that the loss is slowly improving, but this improvement
+slows down in the final few iterations. You can compare these results
+to the logistic regression fitting method supplied by R. The values should
+be somewhat close but probably still a ways off from the optimal solution.
+
+```{r}
+model <- glm(fgm ~ shot_clock + shot_dist + dribbles + touch_time,
+             data = nba,
+             subset=(train_id == "train"),
+             family = binomial())
+beta_glm <- coef(model)
+cbind(beta_glm, beta)
+```
+
+Notice that the correlation between the predicted values is actually
+quite high:
+
+```{r}
+y_hat_gdc <- exp(X_train %*% beta) / (1 + exp(X_train %*% beta))
+y_hat_glm <- exp(X_train %*% beta_glm) / (1 + exp(X_train %*% beta_glm))
+cor(y_hat_gdc, y_hat_glm)
+```
+
+EXERCISE: Try to increase the learning rate to $0.05$. You might think this would learn
+"five times faster", but you'll probably see instead that it instead gets
+stuck.
+
+[Now, go back to the lab and return when you are finished]
+
+### Newton-Ralphson
+
+Plug in the gradient formula once again below and run the NR algorithm. Notice
+that I have just done 5 iterations rather than 5000:
+
+```{r}
+beta <- rep(0, ncol(X_train))    # a starting point; all zeros
+n_iter <- 5                     # number of times the algorithm will run
+
+for (iter in (seq_len(n_iter) - 1))
+{
+  p <- 1 / (1 + exp(-X_train %*% beta))
+  D <- as.numeric(p * (1 - p))
+
+  # construct the Hessian matrix
+  H <- crossprod(X_train, diag(D) %*% X_train)
+
+  grad <- NULL # put your formula for the gradient in again
+
+  beta <- beta - solve(H, grad)
+
+  if (TRUE)
+  {
+    loss <- sum(log(1 + exp(X_train %*% beta)) - y_train * (X_train %*% beta))
+    cat(sprintf("Iteration: %05d; Loss: %05.02f\n", iter, loss))
+  }
+}
+```
+
+Despite the much smaller set of iterations, notice that we have almost perfectly
+reconstructed the regression vector beta from R's implementation:
+
+```{r}
+cbind(beta_glm, beta)
+```
+
+
+
+
+

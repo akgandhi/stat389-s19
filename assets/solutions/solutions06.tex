@@ -69,135 +69,201 @@
 
 \vspace*{12pt}
 
-\textbf{1. Assume that $Z$ is a random variable that only takes values between $0$
-and $5$. Any value in this range is equally likely to occur. Write down the
-formula for the density function $f$ that corresponds to this random variable.}
+\textbf{1. Take the gradient of the ridge regression loss function and set it equal
+to zero. Get an equation for $\beta_{\lambda}$ in terms of $X$ and $y$. You may
+need to use the fact that $b^t b$ is equal to $b^t I_p b$ in this derivation.
+(Note: Do \textbf{not} yet use the SVD of $X$ here).}
 
 \vspace*{12pt}
 
-The function $f$ should be constant between $0$ and $5$ and zero elsewhere. We
-know that the total integral has to be $1$, so the height of the function must
-be $1/5$. This gives:
+The gradient of the loss function is given by:
 \begin{align}
-f(z) &= \begin{cases} 0, & z < 0 \\ 1/5, & z \in [0, 5] \\ 0, & z > 5 \end{cases}
+\nabla_b \left[ || y - X b ||_2^2 + \lambda \cdot || b ||_2^2 \right] &=
+\nabla_b \left[ y^t y + b^t (X^t X) b - 2 y^t X b + \lambda b^t I_p b \right] \\
+&= 2 \cdot (X^t X) b - 2 \cdot X^t y + 2\lambda \cdot I_p b
 \end{align}
-Some students may worry about the edges and equality signs at the points $0$
-and $5$. In truth, it doesn't matter and is not important because the density
-function only has a meaning when integrated. Its value at a particular point
-is not even well-defined in terms of the probability function.
-
-\vspace*{12pt}
-
-
-\textbf{2. Without doing any calculations, what do you expect to be the expected
-value of $Z$ in the previous question?}
-
-\vspace*{12pt}
-
-The random variable is equally likely to be between $0$ and $5$, so it seems
-reasonable that the expected value is right in the middle at $2.5$.
-
-\vspace*{12pt}
-
-
-
-\textbf{3. Using the formulae in the notes, show that your guess matches the mathematical
-definition of $\mathbb{E}Z$.}
-
-\vspace*{12pt}
-
-We can see this mathematically as follows:
+Notice that the gradient of $v^t b$ is equal to $v$ and \textbf{not} $v^t$; that
+seemed to cause a lot of confusion. Now, setting this equal to zero, we have:
 \begin{align}
-\mathbb{E} Z &= \int_{-\infty}^{+\infty} z \cdot f(z) dz \\
-&= \int_{-\infty}^{0} z \cdot f(z) dz + \int_{0}^{5} z \cdot f(z)dz +
-\int_{5}^{+\infty} z \cdot f(z)dz \\
-&= 0 + \int_{0}^{5} \frac{1}{5} \cdot zdz + 0 \\
-&= \frac{1}{5} \cdot \left[z^2 / 2 \right]_{z=0}^{z=5} \\
-&= \frac{5^2}{2 \cdot 5} = 2.5.
+0 &= 2 \cdot (X^t X) b - 2 \cdot X^t y + 2\lambda \cdot I_p b \\
+X^t y &= (X^t X) b + \lambda \cdot I_p b \\
+X^t y &= \left((X^t X) + \lambda \cdot I_p \right) b \\
+\left((X^t X) + \lambda \cdot I_p \right)^{-1} X^t y &= \beta_\lambda.
 \end{align}
-Which matches our intuition.
+And that is all we need to do. Notice that this is the ordinary least squares
+solution when $\lambda = 0$.
+
 
 \vspace*{12pt}
 
-\textbf{4. Prove the equation given for $\mathbb{V}ar(AZ)$.}
+\textbf{2. The eigenvalue decomposition of a matrix writes a matrix as $Q^t \Lambda Q$ for
+a diagonal matrix $\Lambda$ (the entries are called the matrix eigenvalues) and an
+orthogonal matrix $Q$. Unlike the SVD, the eigenvalue decomposition only applies to
+square matrices and even then does not always exist. Show that the eigenvalues of
+$X^t X$ are equal to the squared singular values of $X$.}
 
 \vspace*{12pt}
 
-Using the definition of the variance we have:
+This comes from just plugging in the SVD:
 \begin{align}
-\mathbb{V}ar(A\epsilon) &= \mathbb{E} \left[ \left(A\epsilon - \mathbb{E} A\epsilon \right)
-\cdot \left(A\epsilon - \mathbb{E} A\epsilon \right)^t \right] \\
- &= \mathbb{E} \left[ \left(A\epsilon - A\mathbb{E} \epsilon \right)
-\cdot \left(A\epsilon - A\mathbb{E} \epsilon \right)^t \right] \\
- &= \mathbb{E} \left[ A \left(\epsilon - \mathbb{E} \epsilon \right)
-\cdot \left(A \left(\epsilon - \mathbb{E} \epsilon\right) \right)^t \right] \\
- &= A \mathbb{E} \left[\left(\epsilon - \mathbb{E} \epsilon \right)
-\cdot \left(\epsilon - \mathbb{E} \epsilon\right)^t A^t \right] \\
-&= A \mathbb{E} \left[\left(\epsilon - \mathbb{E} \epsilon \right)
-\cdot \left(\epsilon - \mathbb{E} \epsilon\right)^t \right] A^t \\
-&= A  \mathbb{V}ar(\epsilon) A^t.
+X^t X &= (UDV^t)^{t} UDV^t \\
+&= V D U^t U D V^t \\
+&= V D^2 V^t
 \end{align}
-Notice that I needed to use the rule $(AB)^T = B^tA^t$ in the second to last
-step.
+So, we have an eigen-decomposition in terms of the right singular vectors $V$
+and the squared singular values $D^2$.
 
 \vspace*{12pt}
 
-\textbf{5. Assume that we have a random variable $y$ defined in terms of a random
-variable $\epsilon$ such that:}
+\textbf{3. I want to derive a formula for $\beta_{\lambda}$ in terms of the SVD of X;
+this is not a long derivation but does require a trick. Take the equation that you
+have already derived for $\beta_{\lambda}$; there should be an identity matrix in
+the formula. consider the SVD of $X$ as $UDV^t$. Write the identify matrix in the
+equation as $VV^t$, plug in the SVD for $X$, and simplify. You should be able to
+factor out some of the terms and are left with something very similar to equation
+we had for the ordinary leasts squares estimator.}
+
+\vspace*{12pt}
+
+Starting with the answer to question one and plugging in the SVD we have:
 \begin{align}
-y &= X b + \epsilon.
+\beta_\lambda &= \left((X^t X) + \lambda \cdot I_p \right)^{-1} X^t y \\
+&= \left( V D^2 V^t + \lambda \cdot VV^t \right)^{-1} V D U^t y \\
+&= \left( V \left[D^2 + \lambda \cdot I_p \right] V^t \right)^{-1} V D U^t y \\
+&= V \left[D^2 + \lambda \cdot I_p \right]^{-1} V^t V D U^t y \\
+&= V \left[D^2 + \lambda \cdot I_p \right]^{-1} D U^t y \\
+&= V \cdot \text{Diag} \left( \frac{\sigma_1}{\sigma_1^2 + \lambda}, \cdots, \frac{\sigma_p}{\sigma_p^2 + \lambda} \right) \cdot U^t y
 \end{align}
-\textbf{Further assume that the expected value of the $\epsilon$ term is the zero vector
-(a vector with zeros in every component). Show that the expected value of the
-ordinary least squares equation for the estimate $\beta$ is equal to $b$.
-This means that $\beta$ is an \textit{unbiased} estimator of $b$.}
+This is just like fitting ordinary least squares, except that the middle term (which
+was $D^{-1}$ is now a different diagonal matrix).
 
 \vspace*{12pt}
 
-Note that we can think of the quantity $(X^tX)^{-1} X^t$ as a single matrix.
-This makes the computation fairly straightforward:
+\textbf{4. Understand that the ridge regression is equivalent to fitting ordinary
+least squares on a new matrix $\bar{X}$ where the singular values have been
+increased by a factor of $\lambda$. Given our argument about the problems with
+the smallest singular value, does it make sense that this change alleviates the
+problem of identifiability?}
+
+\vspace*{12pt}
+
+You can see from the previous answer that we have made the adjustment:
 \begin{align}
-\mathbb{E} \beta &= \mathbb{E}\left[(X^tX)^{-1} X^t y  \right] \\
-&= \mathbb{E}\left[(X^tX)^{-1} X^t (Xb + \epsilon)  \right] \\
-&= \mathbb{E}\left[(X^tX)^{-1} X^t Xb \right] + \mathbb{E}\left[(X^tX)^{-1} X^t \epsilon \right] \\
-&= (X^tX)^{-1} (X^t X) b + (X^tX)^{-1} X^t \mathbb{E}\epsilon \\
-&= b + 0 = b.
+\bar{\sigma_k} &\rightarrow \frac{\sigma_k^2 + \lambda}{\sigma_k}
 \end{align}
 
 \vspace*{12pt}
 
-\textbf{6. Using the same set-up as above, further assume that:}
+\textbf{5. Let's somewhat switch gears here and consider a specific example problem.
+Let $p=2$ and assume that the first column of $X$ ($X_1$) can be written as:}
 \begin{align}
-\mathbb{V}ar(\epsilon) &= \sigma^2 \cdot I_n.
+X_1 = \alpha + X_2, \quad \alpha \in \mathbb{R}^n
 \end{align}
-\textbf{For some fixed value $\sigma^2 > 0$. What is the variance of $y$?}
+\textbf{Where $\alpha$ is a small noise vector. So, $X_1$ and $X_2$ are very similar to
+one another. Write an equation for the value $X b$, factoring in terms of $\alpha$
+and $X_2$ (there should not be any $X_1$ left in the equation). Then, assume that
+we have data generated by:}
+\begin{align}
+y &= X_2 + \text{noise}
+\end{align}
+\textbf{Where the noise is not too large. Convince yourself that all of the following
+values of $b$ produce a reasonable estimate for $\widehat{y} = X b$:}
+\begin{align}
+b &= \begin{bmatrix} 0 \\ 1 \end{bmatrix} \\
+b &= \begin{bmatrix} 1 \\ 0 \end{bmatrix} \\
+b &= \begin{bmatrix} -1 \\ 2 \end{bmatrix} \\
+b &= \begin{bmatrix} -100 \\ 101 \end{bmatrix}
+\end{align}
+\textbf{What do you think is the approximate value of $\beta_\lambda$ for ridge
+regression for a small value of $\lambda$ assuming the noise vector and $\alpha$
+are also both small?}
 
 \vspace*{12pt}
 
-Here we just use the variance rule for a sum:
+The value of $X b$ will be equal to just $X_1 \cdot b_1 + X_2 \cdot b_2$ (writing
+out the linear regression explicitly). Simplifying we have:
 \begin{align}
-\mathbb{V}ar(y) &= \mathbb{V}ar(Xb + \epsilon) = \mathbb{V}ar(\epsilon) = \sigma^2 \cdot I_n.
+X b &= X_1 \cdot b_1 + X_2 \cdot b_2 \\
+&= (\alpha + X_2) \cdot b_1 + X_2 \cdot b_2 \\
+&= b_1 \cdot \alpha + X_2 \cdot (b_1 + b_2) \\
+&\approx X_2 \cdot (b_1 + b_2)
 \end{align}
+Since we want:
+\begin{align}
+X b &\approx y = X_2 + \text{noise}
+\end{align}
+And solution with $b_1 + b_2 = 1$ will do the trick. Therefore all of the examples
+work. For ridge regression, all of the solutions are equally predictive (more or
+less), so pick the vector that has the smallest size: $b = [0.5, 0.5]$.
 
 \vspace*{12pt}
 
-\textbf{7. Finally, derive a formula for the variance of the ordinary least
-squares estimate $\beta$.}
+\textbf{6. For the previous question, can you guess a plausible value for $V_p$
+(the last left singular) of the matrix $X$? Look back at handout 5, question 3,
+for a hint.}
 
 \vspace*{12pt}
 
-Once again, considering $(X^tX)^{-1} X^t$ as a single matrix, and using the
-previous result, we have:
+We know that adding a multiple of $V_p$ should not change the predictions very
+much; here the $V_p$ that does that is the vector $[1, -1]$ (it adds something
+to $b_1$, subtracts it from $b_2$ and keeps the sum the same). Keeping in mind
+that $|| V_p ||_2 = 1$ we see that a good guess is:
 \begin{align}
-\mathbb{V}ar(\beta) &= \mathbb{V}ar((X^t X)^{-1} X^t y) \\
-&= (X^t X)^{-1} X^t \cdot \mathbb{V}ar(y) \cdot \left[(X^t X)^{-1} X^t \right]^t \\
-&= (X^t X)^{-1} X^t \cdot \sigma^2 \cdot I_n \cdot \left[(X^t X)^{-1} X^t \right]^t \\
-&= \sigma^2 \cdot (X^t X)^{-1} X^t (X^t)^t (X^t X)^{-1} \\
-&= \sigma^2 \cdot (X^t X)^{-1} (X^t X) (X^t X)^{-1} \\
-&= \sigma^2 \cdot (X^t X)^{-1}
+V_p &= \begin{bmatrix} +2^{-1/2} \\ -2^{-1/2} \end{bmatrix}
 \end{align}
+You could also have the signs switched (there's no way to know from the problem
+which is most likely).
 
+\vspace*{12pt}
 
+\textbf{7. In the following final questions, we are going to consider a dataset
+where:}
+\begin{align}
+X^t X &= 1_p \cdot n.
+\end{align}
+\textbf{There is nothing you need to compute here, but make sure that you understand:
+(a) why it makes sense to include the $n$ on the right-hand side, and (b) why
+it makes sense that we say in this case that the columns of $X$ are uncorrelated.}
+
+\vspace*{12pt}
+
+Consider just the first element of $X^t X$, its the size of the first column of
+X: $X_1^t X_1 = || X_1 ||_2^2$. It makes sense that this increases with the sample
+size. For (b), the assumption can be read as saying that the columns of $X$ are
+perpendicular to one another. This geometric property is similar to the probabilistic
+idea of uncorrelated.
+
+\vspace*{12pt}
+
+\textbf{8. Taking $X^t X = 1_p \cdot n$, what is the value of the ordinary least
+squares estimator? Can you explain exactly what a particular component $\beta_k$
+is in terms of an inner product?}
+
+\vspace*{12pt}
+
+Plugging into the formula we have for the OLS estimator, this is just:
+\begin{align}
+\beta &= (X^t X)^{-1} X^t y = X^t y.
+\end{align}
+So each value of $\beta_k$ is equal to just $X_k^t y$, the inner product of the $k$-th
+column of $X$ with $y$.
+
+\vspace*{12pt}
+
+\textbf{9. Again taking $X^t X = 1_p \cdot n$, write the ridge regression vector
+$\beta_\lambda$ as a function of just $n$, $\lambda$, and the OLS solution $\beta$.}
+
+\vspace*{12pt}
+
+Here, we now have:
+\begin{align}
+\beta_\lambda &= (X^t X + \lambda I_p)^{-1} X^t y\\
+&= ((1 + \lambda) \cdot I_p)^{-1} X^t y \\
+&= \frac{1}{1+\lambda} \cdot X^t y \\
+&= \frac{1}{1+\lambda} \cdot \beta \\
+\end{align}
+So when the columns of $X$ are uncorrelated, the ridge regression just scales
+the OLS solution by a factor of $(1 + \lambda)^{1}$
 
 
 
