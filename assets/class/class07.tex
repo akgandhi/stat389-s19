@@ -80,7 +80,7 @@ Today we will look at two other penalties that could be added to the sum of
 squared residuals. The first is called the $\ell_0$-norm, though it is not
 in fact a vector norm. It counts the number of non-zero terms in a vector:
 \begin{align}
-|| b ||_0 &= \# \{ j \quad \text{s.t.} b_j \neq 0 \}.
+|| b ||_0 &= \# \{ j \quad \text{s.t.} \quad b_j \neq 0 \}.
 \end{align}
 Adding this to the least squares estimator leads to best subset regression:
 \begin{align}
@@ -94,7 +94,7 @@ absolute values of the coordinates:
 This is a proper vector norm. Adding it to the square errors leads to the
 lasso regression vector:
 \begin{align}
-\beta^{LASSO}_{\lambda} &= \argmin_b \left\{ || y - Xb||_2^2 + \lambda ||b||_1 \right\}
+\beta^{LASSO}_{\lambda} &= \argmin_b \left\{ || y - Xb||_2^2 + 2 \lambda ||b||_1 \right\}
 \end{align}
 Best subset regression is useful when you have only a small number of variables.
 For large datasets it is computationally intractable because the optimization
@@ -110,7 +110,7 @@ extensive and not applicable to many other applications. We will not get into
 the details in this course. Today you are going to work with the simple case
 where the columns of $X$ are uncorrelated:
 \begin{align}
-X^t X &= n \cdot 1_p. \label{uncor}
+X^t X &= 1_p. \label{uncor}
 \end{align}
 In this particular example it is possible to find analytic solutions to both
 best subset selection and the lasso regression. I think it yields a lot of
@@ -141,11 +141,11 @@ subset regression? When is the loss at this point better than setting $\beta_j =
 Put these conditions together to get a general formula for $\beta_j$ under best
 subset selection.
 \item Use a similar approach to find a solution for $\beta_j$ for lasso regression.
-This requires a little bit more work is very doable with simple one-dimensional
+This requires a little bit more work but is very doable with simple one-dimensional
 calculus!
 \item Consider a dataset for $n=100$ where Equation~\ref{uncor} holds and we have:
 \begin{align}
-X^t y &= n \cdot \begin{bmatrix} 10 \\ 3 \\ -5 \\ 1 \end{bmatrix}
+X^t y &= \begin{bmatrix} 10 \\ 3 \\ -5 \\ 1 \end{bmatrix}
 \end{align}
 Draw a sketch with $\lambda$ on the x-axis and $\beta_k$ for the best subset selection
 on the y-axis. That is, you'll have four different curves showing the values of $\beta_1$,

@@ -1,0 +1,276 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[12pt,hidelinks]{article}
+
+% 1. Load LaTeX packages
+\usepackage{fontspec}
+\usepackage{geometry}
+\usepackage{lastpage}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{xunicode}
+\usepackage{listings}
+\usepackage{color}
+\usepackage{amssymb}
+
+% 2. Define page dimensions and spacing
+\geometry{top=1in, bottom=1in, left=1in, right=2in, marginparsep=4pt,
+          marginparwidth=1in}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{12pt}
+
+% 3. Set header, footer, and bibliography
+\renewcommand{\headrulewidth}{0pt}
+\pagestyle{fancyplain}
+\fancyhf{}
+\lfoot{}
+\rfoot{page \thepage\ of \pageref{LastPage}}
+\bibliographystyle{acm}
+
+% 4. Set fonts for the document
+\defaultfontfeatures{Mapping=tex-text}
+\setromanfont{YaleNew}
+
+% 5. Define custom code for book environments and commands
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\pkg}[1]{\textbf{#1}}
+
+% 6. Define custom code for book environments and commands
+\definecolor{verbgray}{gray}{0.9}
+\definecolor{verbgray2}{gray}{0.975}
+
+\lstnewenvironment{rcode}{%
+  \lstset{backgroundcolor=\color{verbgray},
+  frame=single,
+  framerule=0pt,
+  basicstyle=\ttfamily,
+  keepspaces=true,
+  columns=fullflexible}}{}
+
+\lstnewenvironment{rres}{%
+  \lstset{backgroundcolor=\color{verbgray2},
+  frame=single,
+  framerule=0pt,
+  basicstyle=\ttfamily,
+  keepspaces=true,
+  columns=fullflexible}}{}
+
+% 7. Define numbering scheme for equations (only needed for handout).
+\numberwithin{equation}{section}
+\setcounter{section}{7}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+{\LARGE Lab Solutions 07}
+
+\vspace*{12pt}
+
+\textbf{1. This was a question from last lab, but in case you did not get there,
+make sure that you can derive a formula for ridge regression under the uncorrelated
+assumption.}
+
+\vspace*{12pt}
+
+In the previous lab, I assumed that $X^t X$ was equal to $n$ times the identity.
+Removing the $n$ term gives:
+
+\begin{align*}
+\beta^{RIDGE} &= \frac{1}{1 + \lambda} \cdot X^t y = \frac{1}{1 + \lambda} \cdot \beta^{OLS}.
+\end{align*}
+
+See the previous lab solutions for the details.
+
+\vspace*{12pt}
+
+\textbf{2. Write the best subset selection loss function as a sum over $j$ from $j=1$
+to $j=p$. That is, you can write the loss function as a sum of independent terms,
+where each elements depends only on the $j$'th column of $X$ and the $j$'th component
+of $\beta$.}
+
+\vspace*{12pt}
+
+Writing $\chi\{ b_j \neq 0 \}$ as the indicator function that is one when the
+statement is true and zero otherwise, we have:
+
+\begin{align*}
+|| y - X b ||_2 + \lambda || b ||_0 &=
+y^t y + b^t X^t X b - 2 y^t X b + \lambda \cdot \sum_j \chi\{ b_j \neq 0 \} \\
+&= y^t y + b^t b - 2 y^t X b + \lambda \cdot \sum_j \chi\{ b_j \neq 0 \} \\
+&= y^t y + \sum_j b_j^2 - 2 \sum_j y^t X_j b_j + \lambda \cdot \sum_j \chi\{ b_j \neq 0 \} \\
+&= y^t y + \sum_j \left[ b_j^2 - 2  y^t X_j b_j + \lambda \cdot \chi\{ b_j \neq 0 \} \right]
+\end{align*}
+
+Which is now a decoupled sum over the components of $\beta_j$, plus a leading
+constant term that doesn't effect the loss.
+
+\vspace*{12pt}
+
+\textbf{3. Repeat the previous question for lasso regression, showing that it also
+decouples over the individual variables.}
+
+\vspace*{12pt}
+
+The lasso regression works similarly:
+
+\begin{align*}
+|| y - X b ||_2 + 2 \lambda || b ||_1 &=
+y^t y + b^t X^t X b - 2 y^t X b + 2 \lambda \cdot \sum_j | b_j | \\
+&= y^t y + b^t b - 2 y^t X b + 2 \lambda \cdot \sum_j | b_j | \\
+&= y^t y + \sum_j b_j^2 - 2 \sum_j y^t X_j b_j + 2 \lambda \cdot  \sum_j | b_j | \\
+&= y^t y + \sum_j \left[ b_j^2 - 2 y^t X_j b_j + 2 \lambda \cdot | b_j |\right]
+\end{align*}
+
+The only difference being the last term in the equation.
+
+\vspace*{12pt}
+
+\textbf{4. Understand why your answers to the last two questions allow us to minimize
+the loss function individually for each component $\beta_j$.}
+
+\vspace*{12pt}
+
+In general if we want to minimize a function $f(x, y) = f_1(x) + f_2(y)$ over
+$x$ and $y$, it should be clear that all we need to do is minimize $f_1$ over x
+and $f_2$ over y. The same logic applies to any number of variables.
+
+\vspace*{12pt}
+
+\textbf{5. Assume that $\beta_j \neq 0$. What would be its optimal value under best
+subset regression? When is the loss at this point better than setting $\beta_j = 0$?
+Put these conditions together to get a general formula for $\beta_j$ under best
+subset selection.}
+
+\vspace*{12pt}
+
+We want to minimize the quantity:
+
+\begin{align*}
+f_j(b_j) &= b_j^2 - 2  y^t X_j b_j + \lambda \cdot \chi\{ b_j \neq 0 \}
+\end{align*}
+
+If $\beta_j \neq 0$ then, this is equal to a simple quadratic function in $b_j$:
+
+\begin{align*}
+b_j^2 - 2  y^t X_j b_j + \lambda
+\end{align*}
+
+We minimize this just like any other quadratic, by taking the derivative with
+respect to $b_j$ and setting it equal to zero:
+
+\begin{align*}
+2 b_j - 2  y^t X_j &= 0 \\
+b_j &= y^t X_j
+\end{align*}
+
+The value of $f_j$ at this point is:
+
+\begin{align*}
+f_j(y^t X_j) &= (y^t X_j)^2 - 2  (y^t X_j) \cdot (y^t X_j) + \lambda \\
+&= \lambda - (y^t X_j)^2
+\end{align*}
+
+The question is, when will this be better than the alternative of setting $b_j = 0$?
+There we have $f_j(0) = 0$; this will be better---more negative---whenever
+$lambda \geq (y^t X_j)^2$. This should seem reasonably because we are more likely to
+set a coefficient equal to zero if (i) $\lambda$ is large, or (ii) the correlation
+$y^t X_j$ is small.
+
+Putting this together, we can compactly write:
+
+\begin{align*}
+\beta^{BSR} &= \begin{cases} 0 & \lambda > (y^t X_j)^2 \\
+                             y^t X_j & \text{else} \\ \end{cases}
+\end{align*}
+
+Or, even better, as:
+
+\begin{align*}
+\beta^{BSR} &= \begin{cases} 0 & \lambda > (\beta^{OLS}_j)^2 \\
+                             \beta^{OLS}_j & \text{else} \\ \end{cases}
+\end{align*}
+
+Which shows the direct link with the unpenalized solution.
+
+\vspace*{12pt}
+
+\textbf{6. Use a similar approach to find a solution for $\beta_j$ for lasso regression.
+This requires a little bit more work but is very doable with simple one-dimensional
+calculus!}
+
+\vspace*{12pt}
+
+We want to minimize the quantity:
+
+\begin{align*}
+f_j(b_j) &= b_j^2 - 2  y^t X_j b_j + 2 \lambda \cdot | b_j |
+\end{align*}
+
+Assume to start that the optimal value of $b_j$ is greater than zero. Then,
+$| b_j | = b_j$ and we only have to consider points of $f_j$ that can be written
+as a simply quadratic function:
+
+\begin{align*}
+f_j(b_j) &= b_j^2 - 2  y^t X_j b_j + 2 \lambda  b_j
+\end{align*}
+
+The optimal value occurs when the derivative is equal to zero, which happens at:
+
+\begin{align*}
+f_j'(b_j) &= 2 b_j - 2  y^t X_j + 2 \lambda \\
+0 &= b_j - y^t X_j + \lambda \\
+b_j &= y^t X_j - \lambda.
+\end{align*}
+
+Great! Except, this is only valid when $b_j > 0$. Therefore, this solution only
+works when $y^t X_j > \lambda$. Now, assume instead that $f_j$ is optimized when
+$b_j < 0$. Now it reduces to:
+
+\begin{align*}
+f_j(b_j) &= b_j^2 - 2  y^t X_j b_j - 2 \lambda  b_j
+\end{align*}
+
+And setting the derivative equal to zero yields:
+
+\begin{align*}
+f_j'(b_j) &= 2 b_j - 2  y^t X_j - 2 \lambda \\
+0 &= b_j - y^t X_j - \lambda \\
+b_j &= y^t X_j + \lambda.
+\end{align*}
+
+This, in turn, only holds if $y^t X_j \leq -\lambda$. So, what happens if
+$|y^t X_j| \leq \lambda$? Neither of these conditions hold, and $f_j$ is optimized
+when $b_j = 0$. Putting this all together yields:
+
+\begin{align*}
+\beta^{LASSO} &= \begin{cases} y^t X_j + \lambda & y^t X_j \leq -\lambda \\
+                               0 & |y^t X_j| \leq \lambda \\
+                               y^t X_j - \lambda & y^t X_j \geq \lambda \end{cases}
+\end{align*}
+
+Or, very compactly, as:
+
+\begin{align*}
+\beta^{LASSO} &= \begin{cases} \beta^{OLS}_j - \lambda \cdot sign(\beta^{OLS}_j) & |y^t X_j| \geq \lambda \\
+                                0 & \text{else} \end{cases}
+\end{align*}
+
+In words, the ordinary least squares coefficients are shrunk towards zero by a
+linear factor of $\lambda$. Coefficients with absolute size less than $\lambda$
+are set to zero.
+
+\vspace*{12pt}
+
+\textbf{7-9. Draw a sketches for the three estimators}
+
+\vspace*{12pt}
+
+Look at the R output for an example of the ridge and lasso estimators. The plot of
+the best-subset regression is straightforward if you have the correct equation; it
+is a piecewise constant function.
+
+\end{document}
+
