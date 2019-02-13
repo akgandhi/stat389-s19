@@ -60,78 +60,117 @@
 
 % 7. Define numbering scheme for equations (only needed for handout).
 \numberwithin{equation}{section}
-\setcounter{section}{7}
+\setcounter{section}{8}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
 
-{\LARGE Lab Solutions 07}
+{\LARGE Lab Solutions 08}
 
 \vspace*{12pt}
 
-\textbf{1. }
+\textbf{1. Start by doing the text analysis questions in the Rmarkdown file.}
 
 \vspace*{12pt}
 
+See the solutions in the HTML file for Lab08.
 
 \vspace*{12pt}
 
-\textbf{2. }
+\textbf{2. Assume that a magical creature has told you all but the first
+coefficient of $\beta^{LASSO}$ for some value of $\lambda$. How would you
+go about solving for the first coefficient if you know all of the others?
+Start by defining the partial residual:}
+\begin{align}
+r &= y - \sum_{j = 2}^p \beta_j \cdot X_j
+\end{align}
+\textbf{This is what is ``left over'' in y that we need to predict using the first
+variable. Finding the best value for $\beta_1$ is surprisingly similar to the
+uncorrelated columns case you derived last class. We want to minimize the
+following quantity over $b_1$:}
+\begin{align}
+f(b_1) &= || y - X b ||_2^2 + 2 \lambda | b |_1 \\
+&= || r - X_1 b_1 ||_2^2 + 2 \lambda \sum_j | b_j | \\
+&= r^t r + X_1^t X_1 b_1^2 - 2 r^t X_1 b_1 + 2 \lambda \sum_j | b_j | \\
+&\propto X_1^t X_1 b_1^2 - 2 r^t X_1 b_1 + 2 \lambda \cdot | b_1 |
+\end{align}
+\textbf{Note that $b_1$ is a scalar value, so that's why I have $b_1^2$ in the equation
+and not $b_1^t b_1$. I've already done some of the work; now for your part:
+derive a formula for $\beta_1$ by minimizing the function $f(b_1)$. You should
+be able to carry through the method from last time almost exactly.}
 
 \vspace*{12pt}
 
+If $b_1 > 0$ then:
+
+\begin{align}
+f(b_1) &= X_1^t X_1 b_1^2 - 2 r^t X_1 b_1 + 2 \lambda \cdot b_1 \\
+f'(b_1) &= 2 X_1^t X_1 b_1 - 2 r^t X_1 + 2 \lambda
+\end{align}
+
+Setting equal to zero:
+
+\begin{align}
+X_1^t X_1 b_1 &= r^t X_1 - \lambda \\
+b_1 &= \frac{r^t X_1 - \lambda}{ X_1^t X_1}
+\end{align}
+
+Which gives a consistent value of $b_1 > 0$ if $r^t X_1 > \lambda$. If
+$b_1 < 0$ the function becomes:
+
+\begin{align}
+f(b_1) &= X_1^t X_1 b_1^2 - 2 r^t X_1 b_1 - 2 \lambda \cdot b_1 \\
+f'(b_1) &= 2 X_1^t X_1 b_1 - 2 r^t X_1 - 2 \lambda
+\end{align}
+
+Setting equal to zero:
+
+\begin{align}
+X_1^t X_1 b_1 &= r^t X_1 + \lambda \\
+b_1 &= \frac{r^t X_1 + \lambda}{ X_1^t X_1}
+\end{align}
+
+Which gives a consistent value of $b_1 < 0$ if $r^t X_1 < -1 \lambda$. Putting
+this together gives:
+
+\begin{align}
+\beta^{LASSO}_1 &= \begin{cases} \frac{r^t X_1 + \lambda}{ X_1^t X_1} & r^t X_1 \leq -\lambda \\
+                               0 & |r^t X_1| \leq \lambda \\
+                               \frac{r^t X_1 - \lambda}{ X_1^t X_1} & r^t X_1 \geq \lambda \end{cases}
+\end{align}
+
+Which looks a lot like the correlated case, with the partial residuals replacing the
+value of $y$ from before.
 
 \vspace*{12pt}
 
-\textbf{3. }
+\textbf{3. There's nothing special above about the first coefficient. If we define
+the partial residual as:}
+\begin{align}
+r &= y - \sum_{j \neq k} \beta_j \cdot X_j
+\end{align}
+\textbf{Your question also gives (replacing $X_1$ with $X_k$ and $b_1$ with $b_k$) a
+formula for $\beta_k$ in terms of the other coefficients. Coordinate descent
+is an optimization technique that minimizes a function $f$ over several variables
+by optimizing the first variable assuming the others are fixed, then optimizing
+the second variable assuming the others are fixed, and so on through convergence.
+There is nothing specific that you need to do here, but understand how you now
+have a formula for running coordinate decent on the $\ell_1$-penalized regression
+problem.}
 
 \vspace*{12pt}
 
+As said, there is really nothing you need to do here other than understand the
+technique.
 
 \vspace*{12pt}
 
-\textbf{4. }
+\textbf{4. Finally, input these formulas into the final section of the Rmarkdown
+file.}
 
 \vspace*{12pt}
 
-
-\vspace*{12pt}
-
-\textbf{5. }
-
-\vspace*{12pt}
-
-
-\vspace*{12pt}
-
-\textbf{6. }
-
-\vspace*{12pt}
-
-
-\vspace*{12pt}
-
-\textbf{7. }
-
-\vspace*{12pt}
-
-
-\vspace*{12pt}
-
-\textbf{8. }
-
-\vspace*{12pt}
-
-
-\vspace*{12pt}
-
-
-\textbf{9. }
-
-\vspace*{12pt}
-
-
-\vspace*{12pt}
+See the solutions in the HTML file for Lab08.
 
 \end{document}
 

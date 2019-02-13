@@ -1,5 +1,5 @@
 ---
-title: "Class 08: Logistic Regression"
+title: "Class 08: Text Prediction"
 output: html_document
 ---
 
@@ -8,120 +8,298 @@ library(readr)
 library(dplyr)
 library(glmnet)
 library(ggplot2)
+library(stringi)
 theme_set(theme_minimal())
 ```
 
-## Dataset
+## Text prediction with Amazon product reviews
 
-Today we will use a dataset from the nba. Each row is a shot that was taken and
-the goal is to predict whether or not the player made the shot (fgm=1) or not (fgm=0).
+Today, we are going to look at a collection of product reviews from Amazon. We will look
+at this dataset in a few different ways, but today the goal is to predict what category
+a product is in based on the review (this should be relatively easy). Read in the dataset
+from my website and remove some of the rows:
 
 ```{r, message=FALSE}
-nba <- read_csv("https://statsmaths.github.io/ml_data/nba_shots.csv")
-nba
+amazon <- read_csv("https://statsmaths.github.io/ml_data/amazon_product_class.csv")
+amazon <- filter(amazon, !is.na(category), category %in% c(1, 2))
+amazon$category <- as.numeric(factor(amazon$category)) - 1L
 ```
 
-Here is the code to create a straight-forward data matrix for the training and validation
-sets:
+Here is an example of a review from category `0` (books):
 
 ```{r}
-y <- nba$fgm
-X <- model.matrix(~ shot_clock + shot_dist + dribbles + touch_time,
-                  data = nba)
-y_train <- y[nba$train_id == "train"]
-y_valid <- y[nba$train_id == "valid"]
-X_train <- X[nba$train_id == "train",]
-X_valid <- X[nba$train_id == "valid",]
+stri_wrap(amazon$text[amazon$category == 0][1])
 ```
 
-### Logistic regression
-
-I want you to use gradient descent to calculate the logistic regression vector. Most
-of the code is written out for you, but you'll need to add in the correct equation
-for the gradient:
+And here is category `1` (food):
 
 ```{r}
-rho <- 0.01                     # learning rate
-beta <- rnorm(ncol(X_train))    # a starting point; all zeros
-n_iter <- 5000                  # number of times the algorithm will run
+stri_wrap(amazon$text[amazon$category == 1][1])
+```
 
-for (iter in (seq_len(n_iter) - 1))
+The difficulty with text prediction is that we need to have a way of constructing a data matrix from raw text.
+Today, we'll work with an object called a term frequency matrix; the columns correspond to words and we simply
+count how often a word is used in a given observation. To build this we need some additional R libraries. We
+will use the **cleanNLP** package, which you can download with the following code:
+
+```{r}
+if (!require("cleanNLP", quietly = TRUE))
 {
-  p <- exp(X_train %*% beta) / (1 + exp(X_train %*% beta))
-  grad <- t(X_train) %*% (p - y_train)                     # fill in the gradient here
-  beta <- beta - rho * grad / nrow(X_train)
-
-  if ((iter %% 100 == 0))
-  {
-    loss <- sum(log(1 + exp(X_train %*% beta)) - y_train * (X_train %*% beta))
-    cat(sprintf("Iteration: %05d; Loss: %05.02f\n", iter, loss))
-  }
+  install.packages("cleanNLP")
 }
 ```
 
-You should see that the loss is slowly improving, but this improvement
-slows down in the final few iterations. You can compare these results
-to the logistic regression fitting method supplied by R. The values should
-be somewhat close but probably still a ways off from the optimal solution.
+Load the package and initalize the tokenizer *backend*; more on back-ends in a later class.
 
 ```{r}
-model <- glm(fgm ~ shot_clock + shot_dist + dribbles + touch_time,
-             data = nba,
-             subset=(train_id == "train"),
-             family = binomial())
-beta_glm <- coef(model)
-cbind(beta_glm, beta)
+library(cleanNLP)
+cnlp_init_tokenizers()
 ```
 
-Notice that the correlation between the predicted values is actually
-quite high:
+Run the function `cnlp_annotate`, followed by `cnlp_get_token`, to extract the individual words from the reviews
+(this may take a minute or two):
 
 ```{r}
-y_hat_gdc <- exp(X_train %*% beta) / (1 + exp(X_train %*% beta))
-y_hat_glm <- exp(X_train %*% beta_glm) / (1 + exp(X_train %*% beta_glm))
-cor(y_hat_gdc, y_hat_glm)
+anno <- cnlp_get_token(cnlp_annotate(amazon, text_var = "text"))
 ```
 
-EXERCISE: Try to increase the learning rate to $0.05$. You might think this would learn
-"five times faster", but you'll probably see instead that it actually gets stuck.
-
-[Now, go back to the lab and return when you are finished]
-
-### Newton-Ralphson
-
-Plug in the gradient formula once again below and run the NR algorithm. Notice
-that I have just done 5 iterations rather than 5000:
+The output is a data frame, R's object type for storing tabular data, with one row per word. There are
+a lot of other columns that are not filled in because we chose a simplistic NLP backend.
 
 ```{r}
-beta <- rep(0, ncol(X_train))    # a starting point; all zeros
-n_iter <- 5                     # number of times the algorithm will run
+anno
+```
 
-for (iter in (seq_len(n_iter) - 1))
+To turn this into a term frequency matrix, call `cnlp_utils_tfidf`; the options in the call determine
+what words are included (a word must be used in at least `mid_df` percent of documents but not in more
+than `max_df` documents):
+
+```{r}
+X <- cnlp_utils_tfidf(anno, min_df = 0.01, max_df = 0.5, tf_weight = "raw", token_var = "word")
+```
+
+Here are the first few columns and rows of the dataset:
+
+```{r}
+as.matrix(X[1:10, 1:10])
+```
+
+The data matrix should have about 5k rows and 1k columns:
+
+```{r}
+dim(X)
+```
+
+Now, we can construct the training sets:
+
+```{r}
+y <- amazon$category
+X_train <- X[amazon$train_id == "train",]
+y_train <- y[amazon$train_id == "train"]
+```
+
+And run glmnet on the data, plotting the coefficient paths (this should look familiar from last time,
+but now with a lot more variables):
+
+```{r}
+out <- glmnet(X_train, y_train)
+plot(out, xvar="lambda")
+```
+
+Let's use cross validation and see how the model performs for prediction with various lambda
+values:
+
+```{r}
+out <- cv.glmnet(X_train, y_train)
+plot(out)
+```
+
+Here we see, with a much more interesting prediction task, the balance between overfit (lambda
+too small; LHS) and underfit (lambda too large; RHS). The best predictions are right in the middle.
+
+Let's look at the non-zero components of the optimal (under cross-validation) lambda; the code
+here sorts the results from largest to smallest:
+
+```{r}
+beta <- as.matrix(coef(out))
+beta <- beta[beta[,1] != 0,, drop=FALSE][-1,,drop=FALSE]
+beta[order(beta[,1],decreasing=TRUE),,drop=FALSE]
+```
+
+Do the terms make sense? Hopefully they do, at least the terms at the top and bottom of the vector. We
+can manually choose a larger value of lambda to have a more tractable set of coefficients to work with.
+This code uses the 15th largest lambda value:
+
+```{r}
+beta <- as.matrix(coef(out, s=out$lambda[15]))
+beta <- beta[beta[,1] != 0,, drop=FALSE][-1,,drop=FALSE]
+beta[order(beta[,1],decreasing=TRUE),,drop=FALSE]
+```
+
+So, how well does the model do on predicting value on the validation set? The lasso regression
+returns a number, so we need to convert this to a category (more on this next time). I just picked
+the value of 0.5 for now to split the two categories.
+
+```{r}
+y_pred <- as.numeric(predict(out, s = out$lambda.min, newx = X) > 0.5)
+```
+
+And the mis-classification rate on the training and testing sets is....
+
+```{r}
+tapply((y == y_pred), amazon$train_id, mean)
+```
+
+Fairly good! It's correct about 97.5% of the time on the training set and 96% on the validation set.
+
+## Your turn
+
+Re-read the Amazon dataset with the following code; now, we include only the categories 0 (books) and
+1 (movies). This is a harder prediction task:
+
+```{r, message=FALSE}
+amazon <- read_csv("https://statsmaths.github.io/ml_data/amazon_product_class.csv")
+amazon <- filter(amazon, !is.na(category), category %in% c(1, 3))
+amazon$category <- as.numeric(factor(amazon$category)) - 1L
+```
+
+Copying the code from above, fit a lasso model on this dataset. See if the coefficients make sense to
+you and how well it works on the training and testing sets. Try to play around with the parameters for
+constructing the term frequency matrix and see if that helps at all.
+
+Here, I will create the dataset:
+
+```{r}
+anno <- cnlp_get_token(cnlp_annotate(amazon, text_var = "text"))
+```
+
+```{r}
+X <- cnlp_utils_tfidf(anno, min_df = 0.01, max_df = 0.5, tf_weight = "raw", token_var = "word")
+y <- amazon$category
+X_train <- X[amazon$train_id == "train",]
+y_train <- y[amazon$train_id == "train"]
+```
+
+Then, run the model and show the exploratory results:
+
+```{r}
+out <- cv.glmnet(X_train, y_train)
+beta <- as.matrix(coef(out, s=out$lambda[15]))
+beta <- beta[beta[,1] != 0,, drop=FALSE][-1,,drop=FALSE]
+beta[order(beta[,1],decreasing=TRUE),,drop=FALSE]
+```
+
+And finally, show the prediction results:
+
+```{r}
+y_pred <- as.numeric(predict(out, s = out$lambda.min, newx = X) > 0.5)
+tapply((y == y_pred), amazon$train_id, mean)
+```
+
+Only slightly worse that the prior model; were you able to get better results by
+using a different model matrix?
+
+When you are done, do the lab problems and return the final block of code.
+
+### Lasso regression
+
+Here, we'll generate some random data with five columns. I included some code to make sure that the
+columns of X are slightly correlated, otherwise we would just get something that looked nearly the
+same as the case where XtX is equal to the identity.
+
+```{r}
+set.seed(1)
+n <- 100
+p <- 5
+X <- matrix(rnorm(n * p), ncol = p)
+
+# make the columns of X moderately correlated with one another
+X[,2] <- X[,2] + X[,1] * 0.5
+X[,3] <- X[,3] + X[,1] * 0.5
+X[,4] <- X[,3] + X[,1] * 0.5
+
+# construct simulated values y
+b0 <- c(2, -2, -0.5, 0,  0)
+y <- X %*% b0 + rnorm(n, sd=0.5)
+```
+
+The function below applies the coordinate descent algorithm to LASSO regression. You will need
+to fill in the two lines where indicated (right now it just sets beta[k] to 0; fill in the
+correct two expressions).
+
+```{r}
+run_coord_descent_lasso <- function(X, y, lambda=1, max_iter=100)
 {
-  p <- 1 / (1 + exp(-X_train %*% beta))
-  D <- as.numeric(p * (1 - p))
+  beta <- rep(0, ncol(X))                 # initialize beta with all zeros
 
-  # construct the Hessian matrix
-  H <- crossprod(X_train, diag(D) %*% X_train)
-
-  grad <- t(X_train) %*% (p - y_train) # put your formula for the gradiant in again
-
-  beta <- beta - solve(H, grad)
-
-  if (TRUE)
+  for (i in seq_len(max_iter))            # run coordinate descent for at most max_iter runs
   {
-    loss <- sum(log(1 + exp(X_train %*% beta)) - y_train * (X_train %*% beta))
-    cat(sprintf("Iteration: %05d; Loss: %05.02f\n", iter, loss))
+    beta_old <- beta                      # store previous beta value
+    for (k in seq_along(beta))            # cycle through the coordinates
+    {
+      beta[k] <- 0                        # initialize beta_k to zero
+      r <- y - X %*% beta                 # this is partial residual, because beta_k = 0
+      rtx <- t(r) %*% X[,k]               # correlation of X_k and partial residual
+
+      if (rtx > lambda)
+      {
+        # Condition to update beta[k] if rtx is larger than lambda
+        beta[k] <- (rtx - lambda) / (t(X[,k]) %*% X[,k])
+      } else if (rtx < -1 * lambda) {
+        # Condition to update beta[k] if rtx is less than -lambda
+        beta[k] <- (rtx + lambda) / (t(X[,k]) %*% X[,k])
+      }
+    }
+
+    # check if anything changed; if not exit loop and return the result
+    if (sum((beta - beta_old)^2) < 1e-10) { break }
   }
+
+  return(beta)
 }
 ```
 
-Despite the much smaller set of iterations, notice that we have almost perfectly
-reconstructed the regression vector beta from R's implementation:
+Now, run coordinate descent on the dataset for a value of lambda:
 
 ```{r}
-cbind(beta_glm, beta)
+run_coord_descent_lasso(X, y, lambda=70)
 ```
+
+This should make only the first two coefficients non-zero; the signs match the
+values in `b0`, but both values are significantly smaller than in the simulation
+due to the soft-thresholding of the lasso penalty.
+
+Finally, run this code to apply your function to a sequence of 200 lambda values
+and plot the results:
+
+```{r}
+N <- 200
+max_lambda <- max(abs(t(X) %*% y))
+lvals <- seq(0, max_lambda, length.out = N)
+
+B <- matrix(0, ncol = ncol(X), nrow = N)
+for (j in seq_len(N))
+{
+  B[j,] <- run_coord_descent_lasso(X, y, lambda=lvals[j])
+}
+
+paths <- tibble(lambda = rep(lvals, ncol(B)),
+                beta = as.numeric(B),
+                coord = rep(seq_len(ncol(X)), each=nrow(B)))
+
+ggplot(paths, aes(lambda, beta)) +
+  geom_line(aes(color = factor(coord)))
+```
+
+This should look a lot like the plot you had in the last class.
+
+
+
+
+
+
+
+
 
 
 
