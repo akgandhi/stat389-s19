@@ -60,78 +60,52 @@
 
 % 7. Define numbering scheme for equations (only needed for handout).
 \numberwithin{equation}{section}
-\setcounter{section}{7}
+\setcounter{section}{10}
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 \begin{document}
 
-{\LARGE Lab Solutions 09}
+{\LARGE Handout 10: Convex Optimization}
 
-\vspace*{12pt}
+\vspace*{18pt}
 
-\textbf{1. }
+We say that a function $f: \mathbb{R}^p \rightarrow \mathbb{R} $ convex if
+for any values $z_1, z_2 \in \mathbb{R}^p$ and quantity $t \in [0, 1]$ we have
+\begin{align}
+f(t z_1 + (1-t) z_2) \leq t f(z_1) + (1-t) f(z_2).
+\end{align}
+Replacing the inequality in Equation~\ref{convex_def} with a strict
+inequality for $t \in (0, 1)$ yields a definition of a strict convexity. If
+$p$ is equal to $1$ and $f$ is twice differentiable, convexity is equivalent to
+requiring that the second derivative is always non-negative. The lab today
+has you derive some of the most fundamental properties of these convex
+functions.
 
-\vspace*{12pt}
-
-
-\vspace*{12pt}
-
-\textbf{2. }
-
-\vspace*{12pt}
-
-
-\vspace*{12pt}
-
-\textbf{3. }
-
-\vspace*{12pt}
-
-
-\vspace*{12pt}
-
-\textbf{4. }
-
-\vspace*{12pt}
+Convex functions play an important role in statistical learning because many
+of the loss functions that we use to describe models are convex. There is an
+entire theory of convex optimization from which we are borrowing algorithms
+to solve our optimization tasks. Most importantly, we will use the technique
+of stochastic gradient descent in the methods we investigate after the second
+exam.
 
 
-\vspace*{12pt}
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\newpage
 
-\textbf{5. }
+\textbf{LAB QUESTIONS}
 
-\vspace*{12pt}
+\vspace*{0pt}
 
-
-\vspace*{12pt}
-
-\textbf{6. }
-
-\vspace*{12pt}
-
-
-\vspace*{12pt}
-
-\textbf{7. }
-
-\vspace*{12pt}
-
-
-\vspace*{12pt}
-
-\textbf{8. }
-
-\vspace*{12pt}
-
-
-\vspace*{12pt}
-
-
-\textbf{9. }
-
-\vspace*{12pt}
-
-
-\vspace*{12pt}
+\begin{enumerate}
+\item The most important property of convexity is the establishment of a global
+minimum. Assume that $f$ is a strictly convex function and $x_1$ is a \textit{local
+minimum} of $f$. In other words, $f$ is minimized by $x_1$ over a neighborhood
+of $x_1$. Assume that there exists a value $x_2$ that is the global minimum of
+$f$. Show that if $x_1 \neq x_2$ then the definition of strict convexity makes
+it impossible for $x_1$ to be a local minimum. Therefore, strictly convex
+functions do not have local minima.
+\item
+\end{enumerate}
 
 \end{document}
 

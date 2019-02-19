@@ -1,0 +1,296 @@
+---
+title: "Class 10: More Text Prediction"
+output: html_document
+---
+
+```{r, message=FALSE}
+library(readr)
+library(dplyr)
+library(glmnet)
+library(ggplot2)
+library(stringi)
+theme_set(theme_minimal())
+```
+
+## Multinomial regression
+
+The notes here show some modifications to the process that we used last time for
+classification of Amazon product reviews. To start, let's see how we can use
+penalized multinomial regression to predict all three categories at the same
+time:
+
+```{r, message=FALSE}
+amazon <- read_csv("https://statsmaths.github.io/ml_data/amazon_product_class.csv")
+amazon <- filter(amazon, !is.na(category))
+amazon$category <- as.numeric(factor(amazon$category)) - 1L
+```
+
+I will parse the text using the tokenizers backend again and extract out the
+individual tokens:
+
+```{r}
+library(cleanNLP)
+cnlp_init_tokenizers()
+
+anno <- cnlp_get_token(cnlp_annotate(amazon, text_var = "text"))
+```
+
+And then, construct the term frequency matrix the same way:
+
+```{r}
+X <- cnlp_utils_tfidf(anno, min_df = 0.01, max_df = 0.5,
+                      tf_weight = "raw", token_var = "word")
+
+y <- amazon$category
+X_train <- X[amazon$train_id == "train",]
+y_train <- y[amazon$train_id == "train"]
+```
+
+Now, we run glmnet on the data, but this time specify the multinomial
+model.
+
+```{r}
+out <- cv.glmnet(X_train, y_train, family = "multinomial", nfolds = 5)
+```
+
+The output now gives three regression vectors, one for each class
+(sorted by absolute size):
+
+```{r}
+beta <- Reduce(cbind, coef(out, s = out$lambda[25]))
+beta <- beta[apply(beta != 0, 1, any), ][-1,]
+colnames(beta) <- c("Book", "Food", "Movie")
+beta[order(apply(abs(beta), 1, max), decreasing=TRUE),]
+```
+
+And the model performs well on predicting the three classes on the
+validation set:
+
+```{r}
+y_pred <- as.numeric(predict(out, s = out$lambda.min, newx = X, type = "class"))
+tapply((y == y_pred), amazon$train_id, mean)
+```
+
+A confusion matrix shows us where most of the errors occur:
+
+```{r}
+table(y[amazon$train_id == "valid"], y_pred[amazon$train_id == "valid"])
+```
+
+Not surprisingly, it is more common to mistake books and films than
+either of these with food items.
+
+## N-Grams
+
+It is possible to build a frequency matrix that counts not just individual
+words but patterns of words. The following block of code constructs the
+*bigrams* (pairs of words) from the raw dataset and puts everything back
+into a nice annotation object:
+
+```{r}
+library(tokenizers)
+
+ngrams <- tokenize_ngrams(amazon$text,  n_min = 1, n = 2)
+ngrams <- tibble(doc_id = rep(seq_along(ngrams), sapply(ngrams, length)),
+                 token = unlist(ngrams))
+ngrams
+```
+
+We can pass this to the TF-IDF function to get a data matrix based on these
+new terms:
+
+```{r}
+X <- cnlp_utils_tfidf(ngrams, min_df = 0.01, max_df = 0.5, token_var = "token")
+```
+
+And finally, running glmnet on the new data matrix.
+
+```{r}
+y <- amazon$category
+X_train <- X[amazon$train_id == "train",]
+y_train <- y[amazon$train_id == "train"]
+
+out <- cv.glmnet(X_train, y_train, family = "multinomial", nfolds = 5)
+```
+
+Looking at the coeffiecents you'll see a few bigrams, but most of the
+predictive power still rests on the individual words:
+
+```{r}
+beta <- Reduce(cbind, coef(out, s = out$lambda[26]))
+beta <- beta[apply(beta != 0, 1, any), ][-1,]
+colnames(beta) <- c("Book", "Food", "Movie")
+beta[order(apply(abs(beta), 1, max), decreasing=TRUE),]
+```
+
+With larger datasets and different tasks, the n-grams sometimes offer
+much better predictive performance.
+
+## More Annotations
+
+Another option for expanding the text models that we have is to
+use a more complete set of natural language processing tools. 
+The following uses the UDPIPE library to include things such as
+lemmas and parts-of-speech. It takes a while to run over the 
+entire dataset, so let's just look at the first few documents:
+
+```{r}
+cnlp_init_udpipe()
+
+anno <- cnlp_annotate(amazon[1:25,], text_var = "text")
+anno <- cnlp_get_token(anno, combine=TRUE)
+anno[anno$id == "doc3", ]
+```
+
+Notice that the columns we previously had with all missing values
+(lemma, upos and pos) now contain useful data. We can now modify
+the TF-IDF matrix by using the lemmas instead of the tokens and by
+filtering the parts of speach. Here I filtered to only include nouns
+and proper nouns in the output:
+
+```{r}
+X <- filter(anno, upos %in% c("PROPN", "NOUN")) %>%
+  cnlp_utils_tfidf(min_df = 0.01, max_df = 0.5, tf_weight = "raw")
+as.matrix(X[1:10, 1:10])
+```
+
+## Authorship detection
+
+As a last set of examples, let's take a look at a dataset of short
+snippets from three American authors:
+
+```{r, message=FALSE}
+stylo <- read_csv("https://raw.githubusercontent.com/statsmaths/ml_data/master/stylo_us.csv")
+stylo <- filter(stylo, !is.na(author))
+table(stylo$author_name)
+```
+
+I will run this entire dataset through the UDPIPE annotation engine.
+The code below has some logic to save the annotations and re-read 
+them in from my computer so I do not need to wait 20 minutes every
+time I use the computer.
+
+```{r}
+cnlp_init_udpipe()
+
+fout <- "data/stylo_us_anno.rds"
+if (file.exists(fout))
+{
+  anno <- read_rds(fout)
+} else {
+  anno <- cnlp_annotate(stylo, verbose = TRUE)
+  write_rds(anno)
+}
+```
+
+And here is what the annotated data looks like:
+
+```{r}
+anno <- cnlp_get_token(anno)
+anno
+```
+
+We can now do exactly what we did last time by construcing a TF-IDF matrix
+and running a multinomial lasso regression model:
+
+```{r}
+X <- cnlp_utils_tfidf(anno, min_df = 0.01, max_df = 0.5, tf_weight = "raw")
+dim(X)
+
+y <- stylo$author
+X_train <- X[stylo$train_id == "train",]
+y_train <- y[stylo$train_id == "train"]
+
+model <- cv.glmnet(X_train, y_train, family = "multinomial", nfolds = 5)
+```
+
+And now, we'll look at the results:
+
+```{r}
+y_pred <- as.numeric(predict(model, s = model$lambda.min, newx = X, type = "class"))
+tapply((y == y_pred), stylo$train_id, mean)
+```
+
+The model clearly is overfit to the training data. This is partially by
+design; I split novels by the three authors into small chunks, but made
+sure to include all of a novel's chunks entire in either the training or
+validation set. Some of the lost predictive power likely comes from 
+proper names and subject particular to a book and not a specific author.
+
+## POS N-grams
+
+Counting words, for the most part, gets at the content of text. To classify
+authorship we are actually trying to get at style as much as content. How
+might we capture this? One technique is to look at how authors use certain
+patterns of part of speech codes. The following code extract the POS tags
+and reproduces a text with just these tags:
+
+```{r}
+anno$id2 <- sprintf("%05d", as.numeric(stri_sub(anno$id, 4, -1)))
+pos_tags <- summarize(group_by(anno, id2), out = paste(upos, collapse = " "))$out
+pos_tags[1]
+```
+
+Now we can use the same N-gram code, increasing the size of N to three
+(trigrams), to produce a data matrix based on part of speech N-grams:
+
+```{r}
+ngrams <- tokenize_ngrams(pos_tags, n_min = 1, n = 3)
+ngrams <- tibble(id = as.character(rep(seq_along(ngrams), sapply(ngrams, length))),
+                 token = unlist(ngrams))
+
+Z <- cnlp_utils_tfidf(ngrams, min_df = 0.01, max_df = 0.5,
+                      tf_weight = "raw",
+                      doc_var = "id", token_var = "token")
+as.matrix(Z[1:10, 1:10])
+```
+
+With a model matrix in hand, the lasso regression can be applied exactly
+as before:
+
+```{r}
+y <- stylo$author
+Z_train <- Z[stylo$train_id == "train",]
+y_train <- y[stylo$train_id == "train"]
+
+model <- cv.glmnet(Z_train, y_train, family = "multinomial")
+```
+
+And then we'll look at how well this does at predicting the authorship
+of a snippet of text:
+
+```{r}
+y_pred <- as.numeric(predict(model, s = model$lambda.min, newx = Z, type = "class"))
+tapply((y == y_pred), stylo$train_id, mean)
+```
+
+The model is not nearly as overfit as the word-based model but does
+perform slightly worse. How can we do better? One approach is to
+combine the matrix `X` (content) and `Z` (style):
+
+```{r}
+W <- cbind(X, Z)
+
+W_train <- W[stylo$train_id == "train",]
+y_train <- y[stylo$train_id == "train"]
+
+model <- cv.glmnet(W_train, y_train, family = "multinomial")
+```
+
+And then, we see that the combine model does a much better job at predicting
+the output:
+
+```{r}
+y_pred <- as.numeric(predict(model, s = model$lambda.1se, newx = W, type = "class"))
+tapply((y == y_pred), stylo$train_id, mean)
+```
+
+What is the key take-away here? A lot of predictive modeling concerns
+the process of taking raw inputs (here, free-form text) and producing 
+a numeric representation of that input. There are a lot of tricks
+and twists with how to use the models (and understanding the theory and
+computation behind the models really helps), but much of the art behind 
+predictive models comes from the step of creating the model matrix in
+the first place.
+
+

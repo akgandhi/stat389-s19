@@ -1,5 +1,5 @@
 ---
-title: "Class 08: Logistic Regression"
+title: "Class 09: Logistic Regression"
 output: html_document
 ---
 
@@ -84,6 +84,17 @@ cor(y_hat_gdc, y_hat_glm)
 
 EXERCISE: Try to increase the learning rate to $0.05$. You might think this would learn
 "five times faster", but you'll probably see instead that it actually gets stuck.
+
+Finally, note that we can use penalized logistic regression using the
+**glmnet** package. All you need to do is specify the family argument:
+
+```{r}
+model <- cv.glmnet(X_train, y_train, family = "binomial")
+plot(model)
+```
+
+Given the small number of columns in X, it is not surprising that we do not
+get much predictive benefit from the l_1-penalty, though.
 
 [Now, go back to the lab and return when you are finished]
 
