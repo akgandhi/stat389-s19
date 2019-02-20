@@ -1,0 +1,86 @@
+---
+title: "Exam 02: Take home exam"
+output: html_document
+---
+
+```{r, message=FALSE}
+library(readr)
+library(dplyr)
+library(glmnet)
+library(ggplot2)
+library(stringi)
+theme_set(theme_minimal())
+```
+
+### Elastic net regression
+
+Here, we will generate some random data with five columns. I included some
+code to make sure that the columns of X are slightly correlated, otherwise
+we would just get something that looked nearly the same as the case where
+XtX is equal to the identity.
+
+```{r}
+set.seed(1)
+n <- 100
+p <- 5
+X <- matrix(rnorm(n * p), ncol = p)
+
+# make the columns of X moderately correlated with one another
+X[,2] <- X[,2] + X[,1] * 0.5
+X[,3] <- X[,3] + X[,1] * 0.5
+X[,4] <- X[,3] + X[,1] * 0.5
+
+# construct simulated values y
+b0 <- c(2, -2, -0.5, 0,  0)
+y <- X %*% b0 + rnorm(n, sd=0.5)
+```
+
+The function below applies the coordinate descent algorithm regression. You
+will need to fill in the two lines where indicated (right now it just sets
+beta[k] to 0 to) in order to implement the elastic net regression for a given
+`lambda` and `alpha`.
+
+```{r}
+run_coord_descent_lasso <- function(X, y, lambda=1, alpha=1, max_iter=100)
+{
+  beta <- rep(0, ncol(X))                 # initialize beta with all zeros
+
+  for (i in seq_len(max_iter))            # run coordinate descent for at most max_iter runs
+  {
+    beta_old <- beta                      # store previous beta value
+    for (k in seq_along(beta))            # cycle through the coordinates
+    {
+      beta[k] <- 0                        # initialize beta_k to zero
+      r <- y - X %*% beta                 # this is partial residual, because beta_k = 0
+      rtx <- t(r) %*% X[,k]               # correlation of X_k and partial residual
+
+      if (rtx > lambda)
+      {
+        # Condition to update beta[k] if rtx is larger than lambda
+        beta[k] <- 0 # YOU NEED TO CHANGE THIS
+      } else if (rtx < -1 * lambda) {
+        # Condition to update beta[k] if rtx is less than -lambda
+        beta[k] <- 0 # YOU NEED TO ALSO CHANGE THIS
+      }
+    }
+
+    # check if anything changed; if not exit loop and return the result
+    if (sum((beta - beta_old)^2) < 1e-10) { break }
+  }
+
+  return(beta)
+}
+```
+
+Now, run coordinate descent on the dataset for these values of lambda (70)
+and alpha (0.7):
+
+```{r}
+run_coord_descent_lasso(X, y, lambda=70, alpha=0.7)
+```
+
+Knit the markdown file to HTML, print out the result, and hand this in along
+with your derivation of the elastic net coordinate descent terms.
+
+
+
