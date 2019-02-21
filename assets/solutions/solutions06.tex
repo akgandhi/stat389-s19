@@ -243,10 +243,10 @@ is in terms of an inner product?}
 
 Plugging into the formula we have for the OLS estimator, this is just:
 \begin{align}
-\beta &= (X^t X)^{-1} X^t y = X^t y.
+\beta &= (X^t X)^{-1} X^t y = \frac{1}{n} \cdot X^t y.
 \end{align}
-So each value of $\beta_k$ is equal to just $X_k^t y$, the inner product of the $k$-th
-column of $X$ with $y$.
+So each value of $\beta_k$ is equal to just $\frac{1}{n} \cdot X_k^t y$,
+the inner product of the $k$-th column of $X$ with $y$.
 
 \vspace*{12pt}
 
@@ -258,12 +258,12 @@ $\beta_\lambda$ as a function of just $n$, $\lambda$, and the OLS solution $\bet
 Here, we now have:
 \begin{align}
 \beta_\lambda &= (X^t X + \lambda I_p)^{-1} X^t y\\
-&= ((1 + \lambda) \cdot I_p)^{-1} X^t y \\
-&= \frac{1}{1+\lambda} \cdot X^t y \\
-&= \frac{1}{1+\lambda} \cdot \beta \\
+&= ((n + \lambda) \cdot I_p)^{-1} X^t y \\
+&= \frac{1}{n+\lambda} \cdot X^t y \\
+&= \frac{1}{n+\lambda} \cdot \beta \\
 \end{align}
 So when the columns of $X$ are uncorrelated, the ridge regression just scales
-the OLS solution by a factor of $(1 + \lambda)^{1}$
+the OLS solution by a factor of $(n + \lambda)^{1}$
 
 
 
