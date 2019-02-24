@@ -1,0 +1,462 @@
+---
+title: "Class11: Regression Splines"
+output:
+  html_document:
+    css: "style.css"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = TRUE)
+knitr::opts_chunk$set(fig.path = "class11/")
+knitr::opts_chunk$set(fig.height = 5)
+knitr::opts_chunk$set(fig.width = 8.5)
+knitr::opts_chunk$set(out.width = "100%")
+knitr::opts_chunk$set(dpi = 300)
+```
+
+```{r, echo=FALSE, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(glmnet)
+library(tidyr)
+library(stringi)
+
+theme_set(theme_minimal())
+```
+
+### Non-linearity
+
+Linear regression has excellent theoretical properties and,
+as we have seen, can be readily computed from observed data.
+Using ridge regression and principal component analysis we
+can tune these models to optimize for predictive error loss.
+Indeed, linear models are used throughout numerous fields for
+predictive and inferential models. One situation in which
+linear models begin to perform non-optimally is when the
+relationship between the response $y$ and the data is
+not linear nor can it be approximated closely by a linear
+relationship.
+
+As an example of a non-linear model consider observing a
+variable $y_i$ governed by
+
+$$ y_i = \cos(\beta_1 \cdot x_i) + e^{-x_i \cdot \beta_2} + \epsilon_i $$
+
+for some scalar value $x_i$, unknown constants $\beta_1$
+and $\beta_2$, and the random noise variable $\epsilon_i$. 
+
+A common approach for estimating the unknown parameters given
+a set of observations is to again minimize the sum of squared
+residuals. This sum is a well-defined function over the set of
+allowed $\beta_j$'s and often, as in this case, twice differentiable.
+While there is no analogous closed-form solution to the linear
+case, the minimizing estimate values can usually be found using
+a general purpose first, or second-order optimization technique.
+This approach is known as *non-linear least squares* and
+has significant theoretical guarantees over a wide class of
+problem formulations.
+
+What happens when we do not know a specific formula for $y_i$
+that can be written down in terms of a small set of unknown
+constants $\beta_j$? Models of the form seen above
+often arise in engineering and science applications where the
+specific causal mechanism for the response $y_i$ is well
+understood. In statistical learning this is rarely the case.
+More often we just know that the expected value is equal to some function
+\begin{align}
+\mathbb{E} y_i &= f(x_i) \label{nonparam_def}
+\end{align}
+holds for some unknown function $f$. We may suspect that
+$f$ has some general properties; depending on the application it may
+be reasonable to assume that $f$ is continuous, has a bounded derivative,
+or is monotonically increasing in $x_i$. As we do not know a specific
+formula for $f$ in terms of parameters $\beta_j$, the model given in
+Equation~\ref{nonlinear_example} is known as non-parametric regression.
+Common estimators for estimating the non-parametric regression function
+$f$ are the topic of our next few classes.
+
+\textbf{Basis expansion}
+
+Recall that linear regression requires
+only that the relationship with respect to the parameter $\beta_j$ be linear.
+The terms multiplied by each parameter may be any known quantity
+derivable from the data matrix $X$. For example, with a scalar value
+of $x_i$ both
+\begin{align}
+y_i &= \sum_{k = 0}^K x_i^k \cdot \beta_j + \epsilon
+\end{align}
+and
+\begin{align}
+y_i &= \sum_{k = 1}^K sin(x_i / (2\pi K)) \cdot \beta_j + \epsilon
+\end{align}
+are valid linear regression models. The first corresponds to the first
+$K$ terms of the polynomial basis and the second to the first $K$ odd
+terms of the Fourier basis. If we construct a new matrix $Z$ consisting
+of columns that are copies of $x$ taken to various powers or to varying
+applications of the sine function, an estimate of the relationship
+between $y$ and $x$ can be determined using the standard techniques
+for calculating a linear regression model. In general we model the
+relationship
+\begin{align}
+y_i &= \sum_{k = 1}^K B_{k, K}(x_i) \cdot \beta_j + \epsilon
+\end{align}
+for some basis function $B_{k,K}$. This method is known as a
+\textit{basis expansion}.
+
+Let's make this a bit more tangible by looking at an example. Here is some
+simulated data that is highly non-linear:
+
+```{r, echo=FALSE}
+set.seed(1)
+x <- seq(1, 3, by=0.01)
+y <- cos(5 * x) * 0.4 + exp(x / 4) * 2 + rnorm(length(x), sd=0.1)
+
+df <- tibble(x = x, y = y)
+ggplot(df, aes(x, y)) +
+  geom_point()
+```
+
+Let's try to use a polynomial to predict the curve. I will build a new data matrix
+$X$, fill in various powers of the original $x$, and then run a regression model:
+
+```{r}
+k <- 2                                            
+X <- matrix(0, nrow = length(x), ncol = k + 1)   
+for (j in seq(0, k))
+{
+  X[,j + 1L] <- x^(j)
+}
+
+beta <- solve(crossprod(X, X), crossprod(X, y))
+beta
+```
+
+Now, we can use this to make predictions and then see how well the function is able
+to make predictions:
+
+```{r}
+df <- mutate(df, yhat = X %*% beta)
+ggplot(df, aes(x, y)) +
+  geom_point() +
+  geom_line(aes(y = yhat), color = "orange", size = 3)
+```
+
+It looks like we need to add some additional terms. Let's try $k=6$:
+
+```{r}
+k <- 6                                           
+X <- matrix(0, nrow = length(x), ncol = k + 1)   
+for (j in seq(0, k))
+{
+  X[,j + 1L] <- x^(j)
+}
+
+beta <- solve(crossprod(X, X), crossprod(X, y)) 
+df <- mutate(df, yhat = X %*% beta)
+ggplot(df, aes(x, y)) +
+  geom_point() +
+  geom_line(aes(y = yhat), color = "orange", size = 3)
+```
+
+This works very well! 
+
+## Regression splines
+
+Here we discuss an important set of basis functions, known
+as splines, that are particularly well-suited to the task of basis expansion.
+While technically just a specific application of basis expansion, the derivation
+of the splines is subtle enough and their application sufficiently important to
+warrant a separate treatment of their form and usage.
+
+When using a polynomial or Fourier basis to represent a non-linear function,
+small changes in a coefficient will lead to changes in the predicted values
+at every point of the unknown regression function $f$. The global nature
+of the estimation problem in these cases leads to poor local performance
+in the presence of high noise variance or with regression functions $f$
+that have many critical points. Fortunately there is a way of doing basis
+expansion that addresses this concern.
+
+We start by picking a point $k$ within the range of the data points $x_i$.
+A natural choice would be the median or mean of the data. In lieu of
+a higher-order polynomial fit, imagine fitting two linear polynomials
+to the data: one for points less than $k$ and another for points greater
+than $k$. Using indicator functions, we can describe this approach
+with a specific basis expansion, namely
+\begin{align}
+B_0(x) &= I(x \leq k) \\
+B_1(x) &= x \cdot I(x \leq k) \\
+B_2(x) &= I(x > k) \\
+B_3(x) &= x \cdot I(x > k).
+\end{align}
+It will be useful going forward to re-parameterize this in terms of a
+baseline intercept and slope for $x \leq k$ and changes in these values
+for points $x > k$
+\begin{align}
+B_0(x) &= 1  \\
+B_1(x) &= x \\
+B_2(x) &= I(x > k) \\
+B_3(x) &= (x - k) \cdot I(x > k). 
+\end{align}
+A shortcoming of the space spanned by these splines is that at the
+point $k$, known as a \textit{knot}, the predicted values will
+generally not be continuous. It is possible to modify our
+original basis to force continuity at the knot $k$ by removing
+the secondary intercept described by $B_2(x)$. The basis now becomes
+\begin{align}
+B_0(x) &= 1 \\
+B_1(x) &= x \\
+B_2(x) &= (x - k) \cdot I(x > k).
+\end{align}
+Notice that forcing one constraint, continuity at $k$, has reduced
+the degrees of freedom by one, from $4$ down to $3$. How might we
+generalize this to fitting separate quadratic term on the two halves
+of the data? One approach would be to use the basis functions
+\begin{align}
+B_0(x) &= 1 \label{tp_basis_quad_start} \\
+B_1(x) &= x \\
+B_2(x) &= x^2 \\
+B_3(x) &= (x - k) \cdot I(x > k) \\
+B_4(x) &= (x - k)^2 \cdot I(x > k). \label{tp_basis_quad_end}
+\end{align}
+The number of parameters here works out correctly; we have two
+quadratic polynomials ($2 \times 3$) minus one constraint, for a
+total of $6-1=5$ degrees of freedom. What will a function look like
+at the knot $k$ using these basis functions?
+It will be continuous at the knot but is not constrained to have
+a continuous derivative at the point. This is easy to accomplish,
+however, by removing the $B_3(x)$ basis.
+Notice that once again the inclusion of an additional constraint,
+a continuous first derivative, reduces the degrees of freedom by
+one.
+
+Lets see what this looks like in our example. Here is the example
+with a discontinuity in the first derivative:
+
+```{r}
+k <- median(x)
+
+B <- matrix(0, nrow = length(x), ncol = 5)
+
+B[,1] <- 1
+B[,2] <- x
+B[,3] <- x^2
+B[,4] <- (x - k) * as.numeric(x > k)
+B[,5] <- (x - k)^2 * as.numeric(x > k)
+
+beta <- solve(crossprod(B, B), crossprod(B, y))  
+df <- mutate(df, yhat = B %*% beta)
+ggplot(df, aes(x, y)) +
+  geom_point() +
+  geom_line(aes(y = yhat), color = "orange", size = 3)
+```
+
+Here is the example with a continuous first derviative:
+
+```{r}
+k <- median(x)
+
+B <- matrix(0, nrow = length(x), ncol = 4)
+
+B[,1] <- 1
+B[,2] <- x
+B[,3] <- x^2
+B[,4] <- (x - k)^2 * as.numeric(x > k)
+
+beta <- solve(crossprod(B, B), crossprod(B, y))  
+df <- mutate(df, yhat = B %*% beta)
+ggplot(df, aes(x, y)) +
+  geom_point() +
+  geom_line(aes(y = yhat), color = "orange", size = 3)
+```
+
+Defining the positive part function $(\cdot)_{+}$ as
+\begin{align}
+(x)_{+} &= \begin{cases} x, & x \geq 0 \\ 0, & \text{otherwise} \end{cases}
+\end{align}
+we may generalize to an arbitrarily large polynomial of order $M$ by using
+the basis
+\begin{align}
+B_0(x) &= 1 \\
+B_j(x) &= x^j, \quad j = 1, \ldots, M \\
+B_{M + 1}(x) &= (x - k)_{+}^M
+\end{align}
+This basis results in a function with continuous derivatives of orders
+$0$ through $M-1$. We can further generalize this by considering a set
+of $P$ knots $\{ k_p \}_{p = 1}^P$, given by
+\begin{align}
+B_0(x) &= 1 \label{tp_basis_start} \\
+B_j(x) &= x^j, \quad j = 1, \ldots, M \\
+B_{M + p}(x) &= (x - k_p)_{+}^M, \quad p = 1, \ldots, P \label{tp_basis_end}
+\end{align}
+Equations~\ref{tp_basis_start}--\ref{tp_basis_end} defines the
+\textit{truncated power basis} of order $M$. \index{truncated power basis}
+It yields piecewise $M$th
+order polynomials with continuous derivatives of order $0$ through $M-1$.
+Note that once again the degrees of freedom math works out as expected.
+There are $P+1$ polynomials of order $M$ and $P$ sets of $M$ constraints;
+the truncated power basis has $(P+1)(M+1) - PM$, or $1+M+P$, free parameters.
+
+By far the most commonly used truncated power basis functions are those with
+$M$ equal to three. These are justified by the empirical evidence that higher
+order rarely offer performance gains and that human observers are unable
+to detect changes in the third derivative of a function (the idea being
+that you will not be able to point out the knots in a cubic spline).
+
+Lets implement this for our dataset using cubic splines:
+
+```{r}
+P <- 4
+knots <- quantile(x, seq(0.1, 0.9, length.out = P)) 
+
+B <- matrix(0, nrow = length(x), ncol = 1 + 3 + P)  
+B[,1] <- 1
+B[,2] <- x
+B[,3] <- x^2
+B[,4] <- x^3
+
+for (j in seq_len(P))
+{
+  B[,4 + j] <- (x - knots[j])^3 * as.numeric(x > knots[j])
+}
+
+beta <- solve(crossprod(B, B), crossprod(B, y)) 
+df <- mutate(df, yhat = B %*% beta)
+p <- ggplot(df, aes(x, y)) +
+  geom_point() +
+  geom_line(aes(y = yhat), color = "orange", size = 3)
+for (j in seq_len(P))
+{
+  p <- p + geom_vline(xintercept = knots[j], linetype="dashed")
+}
+p
+```
+
+I have added dashed lines to show you where the knots are. Notice that it is
+hard (impossible, I would say) to see the discontinuities in the third derivative
+at these knots.
+
+## Smoothing splines
+
+There is one remaining trouble with regression splines: where and how many knots
+to select. Above, I've used the quantiles of the input data to select the knots
+(this works well, generally), but it stil does not solve the problem of how many
+knots to select. Picking too many quickly overfits the dataset:
+
+```{r, echo=FALSE}
+P <- 20
+knots <- quantile(x, seq(0.1, 0.9, length.out = P))
+
+B <- matrix(0, nrow = length(x), ncol = 1 + 3 + P)
+B[,1] <- 1
+B[,2] <- x
+B[,3] <- x^2
+B[,4] <- x^3
+
+for (j in seq_len(P))
+{
+  B[,4 + j] <- (x - knots[j])^3 * as.numeric(x > knots[j])
+}
+
+beta <- solve(crossprod(B, B), crossprod(B, y))  
+df <- mutate(df, yhat = B %*% beta)
+p <- ggplot(df, aes(x, y)) +
+  geom_point() +
+  geom_line(aes(y = yhat), color = "orange", size = 3)
+for (j in seq_len(P))
+{
+  p <- p + geom_vline(xintercept = knots[j], linetype="dashed")
+}
+p
+```
+
+The most common solution to this issue is to pick a lot of knots, but to use a penalized
+regression model (usually, ridge regression) with cross-validation to control for overfitting.
+Here's the code to make this happen:
+
+```{r}
+P <- 15
+knots <- quantile(x, seq(0.1, 0.9, length.out = P)) 
+
+B <- matrix(0, nrow = length(x), ncol = 3 + P)   
+B[,1] <- x
+B[,2] <- x^2
+B[,3] <- x^3
+
+for (j in seq_len(P))
+{
+  B[,3 + j] <- (x - knots[j])^3 * as.numeric(x > knots[j])
+}
+
+model <- cv.glmnet(B, y, alpha = 0.5, lambda.min.ratio = 0)
+beta <- coef(model)
+df <- mutate(df, yhat = as.numeric(cbind(1, B) %*% beta))
+ggplot(df, aes(x, y)) +
+  geom_point() +
+  geom_line(aes(y = yhat), color = "orange", size = 2)
+```
+
+And it works fairly well!
+
+There is actually one further tweak, that we will not implement directly because it is
+very messy, that is typically used with these smoothing regression splines. Rather than
+penalizing the coefficents of the matrix $B$ directly, there are some theoretical 
+reasons that it is better to penalize the squared second derivative. That is, we find
+a function:
+
+$$ \widehat{f} = \text{argmin}_f \left\{ || y - f(x) ||_2^2 + \lambda \cdot \int_{\mathbb{R}} [f''(x)] dx \right\} $$
+
+It turns out that if you do a modified version of the truncated cubic power bases,
+this solution to this can be written as a form of the ridge regression estimator:
+
+$$  \widehat{\beta} = \text{argmin}_\beta \left\{ || y - B \beta  ||_2^2 + \lambda \cdot || \Omega \beta ||_2^2 \right\} $$
+
+For some matrix $\Omega$. Constructing the correct basis for B (called B-splines)
+and the form of the matrix $\Omega$ is, as mentioned, messy. Let's just use the
+`smooth.spline` function in R:
+
+```{r}
+model <- smooth.spline(x, y)
+
+df <- mutate(df, yhat = predict(model)$y)
+ggplot(df, aes(x, y)) +
+  geom_point() +
+  geom_line(aes(y = yhat), color = "orange", size = 2)
+```
+
+And notice, it does a very good job of predicting the output for us.
+
+## k-Nearest Neighbors
+
+There are other techniques for dealing with non-linearity that are not
+directly connected to linear regression. One of the most popular alternatives
+is called k-Nearest Neighbors (or KNN). For a positive integer k, we simply
+make predictions for a new input $x_{new}$ based on averaging the k data
+points that are closest to the new input. 
+
+Writing the code for this from scratch is easy, but the straightforward 
+approach is slow in R. I will instead make use of the **FNN** package here
+to illustrate how it works. Here is the curve for several values of k:
+
+```{r}
+library(FNN)
+
+df <- tibble(x = x, y = y)
+
+for (k in c(1, 3, 5, 10, 25, 50, 100, 200))
+{
+  df[[sprintf("yhat%d", k)]] <- knn.reg(x, y=y, k=k)$pred
+}
+
+df %>%
+  gather(-x, -y, key = "k", value = "yhat") %>%
+  mutate(k = as.numeric(stri_sub(k, 5, -1))) %>%
+  ggplot(aes(x, y)) +
+    geom_point(alpha = 0.2) +
+    geom_line(aes(y = yhat), color = "orange", size = 1) +
+    facet_wrap(~k, ncol = 2)
+```
+
+Notice that this goes from overfit (k = 1; inperpolation) to underfit (k = 900; a constant).
+The ideal value appears to be somewhere around 10.
+
+

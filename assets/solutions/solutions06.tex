@@ -219,23 +219,19 @@ which is most likely).
 \textbf{7. In the following final questions, we are going to consider a dataset
 where:}
 \begin{align}
-X^t X &= 1_p \cdot n.
+X^t X &= 1_p.
 \end{align}
-\textbf{There is nothing you need to compute here, but make sure that you understand:
-(a) why it makes sense to include the $n$ on the right-hand side, and (b) why
-it makes sense that we say in this case that the columns of $X$ are uncorrelated.}
+\textbf{There is nothing you need to compute here, but make sure that you understand
+why it makes sense that we say in this case that the columns of $X$ are uncorrelated.}
 
 \vspace*{12pt}
 
-Consider just the first element of $X^t X$, its the size of the first column of
-X: $X_1^t X_1 = || X_1 ||_2^2$. It makes sense that this increases with the sample
-size. For (b), the assumption can be read as saying that the columns of $X$ are
-perpendicular to one another. This geometric property is similar to the probabilistic
-idea of uncorrelated.
+The assumption can be read as saying that the columns of $X$ are perpendicular to
+one another. This geometric property is similar to the probabilistic idea of uncorrelated.
 
 \vspace*{12pt}
 
-\textbf{8. Taking $X^t X = 1_p \cdot n$, what is the value of the ordinary least
+\textbf{8. Taking $X^t X = 1_p$, what is the value of the ordinary least
 squares estimator? Can you explain exactly what a particular component $\beta_k$
 is in terms of an inner product?}
 
@@ -243,29 +239,27 @@ is in terms of an inner product?}
 
 Plugging into the formula we have for the OLS estimator, this is just:
 \begin{align}
-\beta &= (X^t X)^{-1} X^t y = \frac{1}{n} \cdot X^t y.
+\beta &= (X^t X)^{-1} X^t y = X^t y.
 \end{align}
-So each value of $\beta_k$ is equal to just $\frac{1}{n} \cdot X_k^t y$,
+So each value of $\beta_k$ is equal to just $X_k^t y$,
 the inner product of the $k$-th column of $X$ with $y$.
 
 \vspace*{12pt}
 
-\textbf{9. Again taking $X^t X = 1_p \cdot n$, write the ridge regression vector
-$\beta_\lambda$ as a function of just $n$, $\lambda$, and the OLS solution $\beta$.}
+\textbf{9. Again taking $X^t X = 1_p$, write the ridge regression vector
+$\beta_\lambda$ as a function of just $\lambda$, and the OLS solution $\beta$.}
 
 \vspace*{12pt}
 
 Here, we now have:
 \begin{align}
 \beta_\lambda &= (X^t X + \lambda I_p)^{-1} X^t y\\
-&= ((n + \lambda) \cdot I_p)^{-1} X^t y \\
-&= \frac{1}{n+\lambda} \cdot X^t y \\
-&= \frac{1}{n+\lambda} \cdot \beta \\
+&= ((1 + \lambda) \cdot I_p)^{-1} X^t y \\
+&= \frac{1}{1+\lambda} \cdot X^t y \\
+&= \frac{1}{1+\lambda} \cdot \beta \\
 \end{align}
 So when the columns of $X$ are uncorrelated, the ridge regression just scales
-the OLS solution by a factor of $(n + \lambda)^{1}$
-
-
+the OLS solution by a factor of $(1 + \lambda)^{-1}$.
 
 
 \end{document}
