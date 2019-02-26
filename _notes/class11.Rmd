@@ -18,7 +18,7 @@ knitr::opts_chunk$set(dpi = 300)
 
 Linear regression has excellent theoretical properties and,
 as we have seen, can be readily computed from observed data.
-Using ridge regression and principal component analysis we
+Using ridge and lasso regression we
 can tune these models to optimize for predictive error loss.
 Indeed, linear models are used throughout numerous fields for
 predictive and inferential models. One situation in which
@@ -51,16 +51,21 @@ constants $\beta_j$? Models of the form seen above
 often arise in engineering and science applications where the
 specific causal mechanism for the response $y_i$ is well
 understood. In statistical learning this is rarely the case.
-More often we just know that the expected value is equal to some function
+More often we just know that the expected value is equal to some function:
 \begin{align}
-\mathbb{E} y_i &= f(x_i) \label{nonparam_def}
+\mathbb{E} y_i &= f(x_i)
 \end{align}
-holds for some unknown function $f$. We may suspect that
+Or, for prediction, that the probability is equal to some function:
+\begin{align}
+p_i &= f(x_i)
+\end{align}
+
+We may suspect that
 $f$ has some general properties; depending on the application it may
 be reasonable to assume that $f$ is continuous, has a bounded derivative,
 or is monotonically increasing in $x_i$. As we do not know a specific
-formula for $f$ in terms of parameters $\beta_j$, the model given in
-Equation~\ref{nonlinear_example} is known as non-parametric regression.
+formula for $f$ in terms of parameters $\beta_j$, the model given here
+is known as non-parametric regression.
 Common estimators for estimating the non-parametric regression function
 $f$ are the topic of this chapter.
 
@@ -86,14 +91,14 @@ have tuning parameters to control the trade-off between variance and
 bias. Often this can be visualized in terms of the smoothness of the
 function $\widehat{f}$. If the regression function is penalized from
 changing too fast, this reduces the variance in the estimates but
-introduces additional bias for values at $x_i$ where it \textit{should}
+introduces additional bias for values at $x_i$ where it *should*
 vary more. Likewise, if the function is allowed to change rapidly this
 will generally give nearly unbiased estimates at the price of a high
 variance in the estimated values. Much of our discussion about non-parametric
 regression will focus on methods for setting tuning parameters and the
 performance of these methods on various types of data.
 
-\textbf{Basis expansion}
+### Basis expansion
 
 Recall that linear regression requires
 only that the relationship with respect to the parameter $\beta_j$ be linear.
@@ -121,7 +126,7 @@ y_i &= \sum_{k = 1}^K B_{k, K}(x_i) \cdot \beta_j + \epsilon
 for some basis function $B_{k,K}$. This method is known as a
 \textit{basis expansion}.
 
-\textbf{Regression splines}
+## Regression splines
 
 Here we discuss an important set of basis functions, known
 as splines, that are particularly well-suited to this task. While technically
@@ -169,7 +174,7 @@ B_3(x) &= (x - k) \cdot I(x > k). \label{tp_basis_orig_end}
 It is left as an exercise to show that these are equivalent bases.
 
 A shortcoming of the space spanned by these splines is that at the
-point $k$, known as a \textit{knot}, the predicted values will
+point $k$, known as a *knot*, the predicted values will
 generally not be continuous. It is possible to modify our
 original basis to force continuity at the knot $k$ by removing
 the secondary intercept described by $B_2(x)$ in
