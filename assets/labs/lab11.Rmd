@@ -57,7 +57,7 @@ you run into any numerical issues?
 
 2. Now, apply a cubic regression spline using the code from my notes. Try several
 different numbers of knots and see which ones appear to be doing the best job
-with the prediction task. 
+with the prediction task.
 
 ```{r}
 
@@ -85,7 +85,7 @@ in the first 4 questions.
 
 ```
 
-## Read in mammal sleep data
+## Read in California housing data
 
 Today I will have you look at a dataset of California housing prices by census
 tract. We will look at this set again next week; today I am going to remove some of
@@ -97,7 +97,7 @@ housing <- housing[, c(1:3, 5L)]
 ```
 
 The format of this dataset is the same as all of the others that we will have
-going forward. The first column is an id that I need in order to check your 
+going forward. The first column is an id that I need in order to check your
 results. The second column splits the data into a training and testing set.
 The third column is the variable that you are going to try to predict:
 
@@ -124,7 +124,7 @@ filter(housing, train_id == "train") %>%
 ```
 
 Notice that the relationship is non-linear and fairly difficult to visualize
-compared to our simulated dataset. You can at least, for example, see the 
+compared to our simulated dataset. You can at least, for example, see the
 peaks corresponding to Los Angeles and San Francisco.
 
 As this is our first programming lab like this, I'll get you started by giving the
@@ -156,7 +156,7 @@ for (j in seq_len(P))
   B[,4 + j] <- (x - knots[j])^3 * as.numeric(x > knots[j])
 }
 
-beta <- solve(crossprod(B[tfl,], B[tfl,]), crossprod(B[tfl,], y_train), tol = 0) 
+beta <- solve(crossprod(B[tfl,], B[tfl,]), crossprod(B[tfl,], y_train), tol = 0)
 yhat <- B %*% beta
 
 sqrt(tapply((y - yhat)^2, housing$train_id, mean)) # RMSE by group
@@ -193,12 +193,12 @@ And follow the instructions at the bottom.
 
 ## Submitting your solutions
 
-Finally, once you have your predictions saved a variable called `awake_pred`,
-run the following code to submit your 
+Finally, once you have your predictions saved as a variable called `pred`,
+run the following code to submit your
 
 ```{r}
 submit <- select(housing, obs_id, pred)
-write_csv(submit, "class01_submit.csv")
+write_csv(submit, "class11_submit.csv")
 ```
 
 Now, upload the csv file to GitHub and you are done.
