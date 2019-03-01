@@ -1,0 +1,327 @@
+---
+title: "Class12: Nonlinearity"
+output:
+  html_document:
+    css: "style.css"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = TRUE)
+knitr::opts_chunk$set(fig.path = "class12/")
+knitr::opts_chunk$set(fig.height = 5)
+knitr::opts_chunk$set(fig.width = 8.5)
+knitr::opts_chunk$set(out.width = "100%")
+knitr::opts_chunk$set(dpi = 300)
+```
+
+```{r, echo=FALSE, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(glmnet)
+library(tidyr)
+library(stringi)
+
+theme_set(theme_minimal())
+```
+
+## Multivariate non-linearity
+
+Our treatment of linear smoothers last time focused on the prediction of
+a response variable $y$ by a scalar quantity $x$. We investigated several
+techniques for estimating non-linear relationships between two
+variables and studied the computational properties of these
+estimators. Most applications of statistical learning, however,
+are concerned with predicting a response as a function of many
+variables. At this point we have only shown how to compute
+linear models in the multivariate case. In this chapter, we
+extend unidimensional linear smoothers to predictions using
+many variables.
+
+Both smoothing splines and k-Nearest Neighbors can be easily extended
+to the case where we have more than one input variable. For KNN, there
+is not really very much that needs to be adjusted at all: just take
+the k-Nearest neighbors in the higher dimensional space and average
+the values. We can extend the basis expansion to include higher order
+interactions as well. For simplicty, assume that we have two input
+values $x$ and $z$ (it will be easier to write than using matricies).
+Here is a polynomial basis expansion of order 2:
+
+\begin{align}
+B_0(x, z) &= 1 \\
+B_1(x, z) &= x \\
+B_2(x, z) &= z \\
+B_3(x, z) &= x \cdot z \\
+B_4(x, z) &= x^2 \\
+B_5(x, z) &= z^2 \\
+B_4(x, z) &= x^2 \cdot z \\
+B_5(x, z) &= z^2 \cdot x
+\end{align}
+
+Notice that we need a lot more terms.
+
+### Curse of dimensionality
+
+We have seen that it is generally straightforward, in an
+algorithmic sense, to extend linear smoothers in one dimension
+to prediction tasks with many predictor variables.
+Unfortunately the performance of these generalizations
+deteriorates quickly as the number of dimensions grows.
+Estimating non-parametric regression functions becomes
+all but impossible as the dimensions grow beyond more
+than 4 or 5 without additional constraints.
+
+In this section, we first explore the nature of what specifically
+becomes difficult in higher dimensions.
+
+Consider
+a set of $p$ basis functions $\{ \phi_j \}_{j=1}^p$. What is the
+resulting dimensionality of the tensor product in $d$-dimensional
+space? This is a simple combinatorics question, resulting in
+a total set of $p^d$ basis functions. If we want to fit
+a truncated power basis of order $2$
+(see Section~\ref{sec_reg_splines}) with $16$ knots, for a total
+of $1 + 3 + 16 = 20$ terms, with two-dimensional data
+results in a total of $400$ coefficients that must be
+estimated. This is already a significant increase in model
+complexity relative to the one-dimensional case. Using
+the truncated power basis with only $3$ knots, for a total of
+$7$ terms, with $12$ variables yields over $13.8$ billion
+coefficients to estimate in the tensor product. Three knots
+each will only capture a very weak form of non-linearity
+and $12$ variables is fairly small compared to many problems
+in statistical learning. Clearly, tensor products will not be a
+viable solution to fitting non-parametric regression in more than a
+few dimensions.
+
+The *curse of dimensionality* is a collection of related
+concepts that, among other things, show that the explosion
+of terms needed for a tensor product approach to multivariate
+non-parametric regression is an unavoidable problem. Consider
+the k-nearest neighbors estimator. We have already seen that
+this can be easily extended to multivariate data. There is no
+exploding set of terms that needs to be estimated with the
+nearest neighbors algorithm. It seems equally complex regardless
+of the number of dimensions it is applied within. We will use
+a simple simulation to explain the difficulty with nearest
+neighbors as the dimensionality of the space increases.
+
+Let
+us generate data randomly distributed over the unit cube
+$[-1, 1]^{d}$ for dimensions ranging from $1$ to $18$ and
+compute the proportion of points that are within a distance
+of $1$ from the origin. For context, in two dimensions this
+should be roughly the ratio between the size of a circle of
+radius $1$ and the unit cube: $\pi / 4 \approx 0.79$.
+
+```{r}
+n <- 1e6
+d_vals <- 1:18
+props <- rep(NA_real_, length(d_vals))
+for (i in seq_along(d_vals)) {
+  d <- d_vals[i]
+  X <- matrix(runif(n * d, min = -1, max = 1), ncol = d)
+  dist <- apply(X^2, 1, sum)
+  props[i] <- mean(dist <= 1)
+}
+```
+
+The output in the variable `props` decays
+so quickly that it is difficult to even plot it
+very well. Here, instead, is a print out of the
+$18$ proportions from the simulation:
+
+```{r}
+options(width = 58)
+sprintf("d=%02d, prop=%01.6f", d_vals, props)
+```
+
+In only $18$ dimensions, not a single one of the
+million points sampled in the simulation were within
+a distance of $1$ of the origin. The lesson here is that
+for data randomly distributed in high dimensions, the
+nearest neighbors to any observation will still be
+fairly far away. These `neighbors' will therefore be
+poor estimates of how the function behaves at a point
+of interest.
+
+Our simulation of points in the unit cube illustrates
+that the typical distances between points grow larger
+in higher dimensions. While true, this is not
+fundamentally the problem that occurs when applying
+distance-based estimators to multidimensional data.
+If the scale of the distances was simple scaling upwards
+this might not be an issue. Consider for a moment what the
+maximum distance of points to origin are in our simulation...
+This will occur when a point is in the corner of the unit
+cube, and scales as:
+
+$$ \sqrt{1^2 + 1^2 + \cdots + 1^2} = \sqrt{d} $$
+
+At its core, the curse of dimensionality says that our
+intuition about space built from living in only three
+dimensions does not extend well to geometric properties
+in higher dimensions. Our simulation shows that points
+are moving away from the origin at an exponential rate
+while our derivation illustrates that the average
+distances  should only increase at most as a rate proportional
+to the square root of the dimension. To rectify these
+apparently conflicting statements, we now generate data
+from a $100$-dimensional unit cube and look at the whole
+distribution of distances from the origin.
+
+```{r}
+d <- 100
+X <- matrix(runif(n * d, min = -1, max = 1), ncol = d)
+dist <- sqrt(apply(X^2, 1, sum))
+
+ggplot(tibble(dist = dist), aes(dist)) +
+  geom_histogram(bins = 100, color = "black", fill = "white") +
+  scale_x_continuous(limits = c(0, sqrt(100))) +
+  geom_vline(xintercept = mean(dist), linetype = "dashed", color = "blue")
+```
+
+The figure shows that the distances are
+clustering around a particular value. The concentration
+around this mean is what causes the proportion of points
+close to the origin to shrink so rapidly. The mean itself
+grows only at a rate proportional to the square root of
+$d$.
+
+To summarize, all of the sampled points appear
+to be approximately the same distance away from the origin.
+This phenomenon is a specific example of the *concentration of measure*,
+a general result showing that well-behaved
+functions of independent random variables approximate a
+constant as the number of variables becomes large.
+
+The concentration of distances around a single value
+illustrates the actual problem with distance-based prediction
+functions in high dimensions: if all points look approximately
+the same distance away from a reference point, there is
+no sensible set of sample weights to place on the training
+data for prediction at a point $x_{new}$.
+
+### Additive models
+
+One way to circumvent the curse of dimensionality is to
+restrict the class of non-parametric relationships between
+$X$ and $y$ that are under consideration. Linear models are
+a particularly strict form of restriction where each predictor
+variable is assumed to have a fixed partial derivative with
+respect to the response. Additive models relax this assumption
+while remaining clear of the curse of dimensionality. Additive
+models assume that the mean of $y$ can be decomposed into a
+sum of univariate functions over the predictors,
+
+\begin{align}
+\mathbb{E} \left[ y_i | x_i \right] &= \alpha + \sum_j f_j(x_{i,j})
+\end{align}
+
+This allows models such as the saddle function, $x_1^2 - x_2^2$,
+but not those with interactions between the variables. The
+effect of changing any of predictor variables is
+independent of the values of the other predictors. Additive models,
+therefore, capture non-linearities but disallow for interactions.
+
+An additive model can also be extended to the class of generalized
+additive models (GAMs). For example we can extend logistic regression
+by writing:
+
+\begin{align}
+logit \left( \mathbb{E} \left[ y_i = 1 | x_i \right] \right) &= \alpha + \sum_j f_j(x_{i,j})
+\end{align}
+
+Where:
+
+\begin{align}
+logit \left( a \right) &= \log{\frac{a}{1 - a}}
+\end{align}
+
+How does one actually fit such a model? There's an older technique known
+as backfitting the does a form of coordinate descent to solve for each
+function $f_j$ using linear smoothings. At the moment, the preferred method
+is to do basis expansion and solving using a ridge regression using a modified
+penalty term $|| \Omega b ||_2^2$. We won't go through all of the details of
+how this is done, but conceptually this should make sense at this point in the
+course.
+
+### Additive models in R
+
+The best R package that I am aware of for fitting (generalized) additive models
+is called **mgcv**. Let's create some simulated data to test the additive models
+with:
+
+```{r}
+n <- 100
+X <- matrix(runif(n * 2), ncol = 2)
+
+y <- cos(X[,1]/(2 * pi)) * 7 + (X[,2] - 0.5)^2 + rnorm(n, sd=0.1)
+df <- tibble(y = y, x1 = X[,1], x2 = X[,2])
+```
+
+If you call the `gam` function with no additional parameters, it simply runs a
+linear regression model.
+
+```{r}
+library(mgcv)
+model <- gam(y ~ x1 + x2, data = df)
+summary(model)
+```
+
+In order to create non-linear parts, wrap the parameters in the function
+`s` that you want to *smooth*:
+
+```{r}
+model <- gam(y ~ s(x1) + s(x2), data = df)
+summary(model)
+```
+
+```{r}
+plot(model, pages=1)
+```
+
+Notice that R is using cross-validation to select how smooth to make each
+of the plots. The **mgcv** package has rules to figure out how large of a
+basis expansion to use. You can over-ride this with the option `k` to the
+function `gam`:
+
+```{r}
+model <- gam(y ~ s(x1) + s(x2, k = 4), data = df)
+plot(model, pages=1)
+```
+
+Not much different here, but you'll see in some situations that it makes a very
+large difference when there is a lot of noise and more variables.
+
+While the curse of dimesionality stops us from interacting a large number of
+variables, its possible to manually interact two variables where we know that
+will help the model. To do this, include both in the same `s` function:
+
+```{r}
+model <- gam(y ~ s(x1, x2), data = df)
+plot(model, pages=1)
+```
+
+The plot is somewhat hard to read; it is trying to show the contours for the
+values of $y$.
+
+Finally, how can we do classification with GAMs in R? Just add the `family=binomial()`
+option to the gam:
+
+```{r}
+df$y_binary <- as.numeric(df$y > median(df$y))
+
+model <- gam(y_binary ~ s(x1) + s(x2, k = 4), data = df, family = binomial())
+plot(model, pages=1)
+```
+
+The y-axis is now the change in the log-odds rather than the raw values,
+just like with logistic regression. You can do predictions the same way
+as well:
+
+```{r}
+df$pred <- as.numeric(predict(model, df) > 0)
+mean(df$y_binary == df$pred)
+```
+
+And that's about all you will need for additive models.

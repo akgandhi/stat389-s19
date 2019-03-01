@@ -1,0 +1,245 @@
+---
+title: "Class 13: Trees and Forests"
+output:
+  html_document:
+    css: "style.css"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = TRUE)
+knitr::opts_chunk$set(fig.path = "class13/")
+knitr::opts_chunk$set(fig.height = 5)
+knitr::opts_chunk$set(fig.width = 8.5)
+knitr::opts_chunk$set(out.width = "100%")
+knitr::opts_chunk$set(dpi = 300)
+```
+
+```{r, echo=FALSE, message=FALSE}
+library(ggplot2)
+library(dplyr)
+library(glmnet)
+library(tidyr)
+library(readr)
+library(stringi)
+
+theme_set(theme_minimal())
+```
+
+
+## Decision Trees
+
+We will now look at a new dataset of housing prices in Ames,
+Iowa. Unlike our other housing datasets though, the samples
+here are individual houses.
+
+```{r, message = FALSE}
+ames <- read_csv("https://statsmaths.github.com/ml_data/ames.csv")
+ames
+```
+
+One way to build a predictive algorithm is to describe a decision
+tree. The best way to understand what this is is to see an example.
+Here, we use the `tree` library to predict sales price:
+
+```{r}
+library(tree)
+model <- tree(saleprice ~ neighborhood + overall_qual + overall_cond + year_built,
+                      data = ames, subset = train_id == "train",
+              control = tree.control(nobs = nrow(ames), mindev = 0.005))
+```
+
+This relatively old library needs a special plotting notation (so
+don't worry if this looks strange)
+
+```{r}
+par(mar = c(0,0,0,0))
+plot(model, type = "uniform")
+text(model, cex = 0.7, col = "purple")
+```
+
+In order to do prediction, we start at the top of the tree and
+look at each logical statement. If True, move to the left and
+if False move to right. At the bottom (the *terminal nodes* or *leaves*),
+there are predicted values. The tree was built by greedily picking
+variables to spit the dataset up by until some stopping criterion
+was reached; this is usually a fixed depth, a fixed proportion of
+the data, or a fixed decrease in the RMSE of accuracy rate.
+
+## Random Forests
+
+Decision trees give very noisy predictions due to their use of
+greedy logic and because points on the boundary of a decision
+cut-off are forced into a fixed bucket. By noisy, I mean that a
+slightly different training set would yield significantly
+different predictions for at least some of the test points.
+This may seem like a design flaw, but we can easily turn it into
+a design feature!
+
+The idea of a random forest is to add some randomness into the
+decision tree algorithm, fit a large number of trees using this
+random variation, and produce predictions by averaging together
+the predictions from all these individual trees (its a *forest*
+because there are a lot of trees; get it?). The random logic
+applies only the building of the trees; once created, each tree
+is exactly the same as in the case above. The randomness comes
+from two sources:
+
+- for each tree, select only a subset of the training data to
+train with
+- for each split, select only a subset of the available variables
+to split on
+
+The exact values for these two random features can be set as
+hyperparameters. We can fit random forests using the `randomForest`
+function from the package with the same name as follows:
+
+```{r, message = FALSE}
+library(randomForest)
+set.seed(1)
+model <- randomForest(saleprice ~ overall_qual + year_built,
+                      data = ames, subset = train_id == "train",
+                      ntree = 20, maxnodes = 3, mtry = 1)
+```
+
+Here I selected 20 randomly generated trees, each having at most
+3 terminal nodes and only allowing one variable to be used at
+each split. These are very low settings, used only for illustrating
+the algorithm here. We can get predictions from each individual
+tree by setting `predict.all` to `TRUE`:
+
+```{r}
+obj <- predict(model, newdata = ames, predict.all = TRUE)$individual
+```
+
+Here is the prediction for just the third tree:
+
+```{r}
+mutate(ames, price_pred = obj[,4]) %>%
+  ggplot(aes(overall_qual, year_built)) +
+    geom_point(aes(color = price_pred)) +
+    viridis::scale_color_viridis()
+```
+
+Can you figure out roughly what the tree looks like? It first
+splits on overal quality being less than 7.5, and then splits
+the lower quality houses by year built around 1982. The individual
+prediction is not very smooth or complex.
+
+Taking all of the twenty trees together, the average model
+looks quite a bit different:
+
+```{r}
+mutate(ames, price_pred = predict(model, newdata = ames)) %>%
+  ggplot(aes(overall_qual, year_built)) +
+    geom_point(aes(color = price_pred)) +
+    viridis::scale_color_viridis()
+```
+
+Helpfully, the **randomForest** also provides the function
+`importance` that measures how important each variable is
+to the model.
+
+```{r}
+importance(model)
+```
+
+This is a measurement of how often the variable was used
+in the model and how much it decreased the RMSE each time it
+was used to split the dataset.
+
+## Gradient Boosted Trees
+
+Gradient boosted trees offer a slightly different approach
+to random forests for making use of the noisy nature of
+decision trees. Like random forests, they construct a
+number of trees, each using only a subset of the training
+data. They do not restrict the variables available for
+each node to split on. Most importantly, gradient boosted
+trees are fit in a sequence, with each tree trying to predict
+the residuals left over by the other trees.
+
+More exactly, if the fitted values from the t-th tree
+are given by:
+
+$$ \widehat{Y_i^{(t)}} $$
+Then we train the k-th tree on the values Z given by:
+
+$$ Z_i = Y_i - \eta \cdot \sum_{t = 1}^{k - 1} \widehat{Y_i^{(t)}} $$
+
+The parameter eta is the learning rate. If set to one, this
+is exactly fitting on the residuals of the prior trees.
+Setting to less than one stop the trees from overfitting from
+the first few trees. Here, we prepare a larger set of variables
+from the `ames` dataset:
+
+```{r}
+X <- model.matrix(~ . -1 , data = ames[,-c(1:3)])
+y <- ames$saleprice
+
+y_train <- y[ames$train_id == "train"]
+y_valid <- y[ames$train_id == "valid"]
+X_train <- X[ames$train_id == "train",]
+X_valid <- X[ames$train_id == "valid",]
+```
+
+We will use the **xgboost** package to fit gradient
+boosted trees. I will set the eta parameter to 0.02.
+
+```{r, warning = FALSE, message = FALSE}
+library(xgboost)
+model <- xgboost(data = X_train, label = y_train,
+                 max_depth = 2, eta = 0.01, nthread = 2,
+                 nrounds = 10, objective = "reg:linear",
+                 verbose = 1)
+```
+
+And we can do prediction on the dataset:
+
+```{r, warning = FALSE}
+y_valid_pred <- predict(model, newdata = X_valid)
+sqrt(mean((y_valid - y_valid_pred)^2))
+```
+
+Alternatively, we can use the function `xgb.DMatrix` to
+combine the data matrix and labels:
+
+```{r}
+data_train <- xgb.DMatrix(data = X_train, label = y_train)
+data_valid <- xgb.DMatrix(data = X_valid, label = y_valid)
+```
+
+And use a more advanced calling method for **xgboost**:
+
+```{r}
+watchlist <- list(train=data_train, valid=data_valid)
+
+model <- xgb.train(data = data_train,
+                 max_depth = 3, eta = 1, nthread = 2,
+                 nrounds = 100, objective = "reg:linear",
+                 watchlist = watchlist)
+```
+
+The algorithm is the same, but there are more options available
+with `xgb.train`. As with random forests, there is a way of
+looking at variable importance:
+
+```{r, warning=TRUE}
+importance_matrix <- xgb.importance(model = model)
+importance_matrix
+```
+
+## Thoughts on local models
+
+We've covered a lot about local models today. Here are some take aways:
+
+- don't use the `tree` function for actual predictions; I
+only used it to illustrate decision trees
+- random forests are easy to use and difficult to overfit
+with
+- gradient boosted trees are incredibly powerful (often
+the give the most predictive models in large ML competitions)
+- you need to tune eta and number of trees in GBT to get
+a good model
+
+The last point should be the object of study for the lab today.
+

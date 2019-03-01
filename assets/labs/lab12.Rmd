@@ -1,0 +1,161 @@
+---
+title: "Lab 12"
+author: ""
+output: html_notebook
+---
+
+```{r, message=FALSE}
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(glmnet)
+
+theme_set(theme_minimal())
+```
+
+This lab has two parts. The first has you re-do my description of the
+concentration of measure, varying the dimensionality to see how it effects
+the concentration. In the second, you'll use the California housing dataset
+again, but now make use of the entire dataset.
+
+## Concentration of measure
+
+Below is a modification of code that I used to run the concentration of
+measure experiment. It shows the code for several values of d (I added a
+line at zero to make sure the plot includes zero):
+
+```{r, warning=FALSE}
+n <- 1000
+df <- NULL
+
+for (d in c(3, 10, 50, 100, 1000, 10000))
+{
+  X <- matrix(runif(n * d, min = -1, max = 1), ncol = d)
+  dist <- sqrt(apply(X^2, 2, mean))
+  df <- bind_rows(df, tibble(d = d, dist = dist))
+}
+
+ggplot(df, aes(dist)) +
+  geom_histogram(bins = 100, color = "black", fill = "white") +
+  facet_wrap(~d, scale = "free_x") +
+  geom_vline(xintercept = 0, color = "white")
+```
+
+Modify the code above to instead use the l1-norm of the variables. Then,
+replace that with the median function. Notice that all of the aggregations
+exhibit the same concentration properties (can you figure out how to make
+the plot demonstrate this for the median?).
+
+## The mgcv package
+
+We will need one new package today. You can install it with:
+
+```{r}
+if (!require(mgcv))
+{
+  install.packages("mgcv")
+}
+
+library(mgcv)
+```
+
+## Read in (entire) California housing data
+
+Today I will have you again look at a dataset of California housing prices by
+census tract. This time, though, you are allowed to look at the entire dataset:
+
+```{r, message=FALSE}
+housing <- read_csv("https://github.com/statsmaths/ml_data/blob/master/ca_house_price.csv?raw=true")
+ocol <- ncol(housing)
+```
+
+I want you to fit the six models in the code below. In each block of
+code, fit the model on just the training set, make predictions on the original
+dataset, and use the `tapply` function to print out the RMSE for the training and
+validation sets. **I know this sounds counterintuitive, but I encourage you to
+overwrite the variables in each section (i.e., call all the models `model` and 
+all of the predictions `pred`.** It will save you a lot of trouble over time.
+
+1. Use a linear regression (feel free to use the `gam` function with no modifications)
+to predict the output variable as a function of latitude and longitude. Make sure
+that you only train on the training set.
+
+```{r}
+
+```
+
+2. Modify the above function with a univariate additive model using latitude and
+longitude:
+
+```{r}
+
+```
+
+3. Use an additive model with a two-dimensional smoothing term for the interaction
+of latitude and longitude:
+
+```{r}
+
+```
+
+4. Now, fit a penalized regression model on the dataset. Here you will need
+a model matrix; I've already gotten you started in the code chunk so you do
+not need to look up how to do that:
+
+```{r}
+X <- model.matrix( ~ -1 + ., data = housing[,seq(4, ocol)])
+y <- housing$median_house_value
+
+X_train <- X[housing$train_id == "train",]
+y_train <- y[housing$train_id == "train"]
+```
+
+If you named your model `model`, the following code will show the most
+import variables for different values of lambda (modify the number 14
+to change the number of variables that are included). We will use this
+information in the last model.
+
+```{r}
+B <- coef(model, s = model$lambda[14])
+B[B[,1] != 0,,drop=FALSE]
+```
+
+5. Use k-Nearest neighbors with all of the variables. Try to use several values
+of k to find a value that performs reasonably well.
+
+```{r}
+library(FNN)
+
+```
+
+6. Use an additive model that has a smoothing term for latitude and longitude,
+but now include additional terms as suggested by the lasso regression. The
+details are up to you.
+
+```{r}
+
+```
+
+### Best model
+
+Now, its time to build your final model. Using the information you've seen
+above, build a model that you think will be maximally predictive. You are
+free to be as creative as you would like short of using external datasets.
+
+```{r}
+
+```
+
+
+## Submitting your solutions
+
+Finally, once you have your predictions saved as a variable called `pred`,
+run the following code to produce your your results:
+
+```{r}
+submit <- select(housing, obs_id, train_id)
+submit <- mutate(submit, pred = pred)
+write_csv(submit, "class12_submit.csv")
+```
+
+Now, upload the csv file to GitHub and you are done.
