@@ -1,0 +1,55 @@
+---
+title: "Lab 15"
+author: ""
+output: html_notebook
+---
+
+# Set up
+
+Read in the following libraries and to load the crimes dataset:
+
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+library(viridis)
+
+crimes <- read_csv("https://statsmaths.github.io/ml_data/chi_crimes_12.csv")
+```
+
+The names of the crimes are, in order:
+
+```{r}
+crimes_list <- c("theft", "battery", "criminal damage", "narcotics",
+"other offense", "assault", "burglary", "motor vehicle theft", "robbery",
+"deceptive practice", "criminal trespass", "prostitution")
+```
+
+Make sure your predictions are all an integer from 1 to 12.
+
+```{r}
+if (!require("keras")) {
+  install.packages("keras")
+}
+```
+
+## Build neural networks
+
+
+
+
+
+
+## Submitting your solutions
+
+Finally, once you have your predictions saved as a variable called `pred`,
+run the following code to produce your your results:
+
+```{r}
+submit <- select(flights, obs_id, train_id)
+submit <- mutate(submit, pred = pred)
+write_csv(submit, "class15_submit.csv")
+```
+
+Now, upload the csv file to GitHub and you are done.
+

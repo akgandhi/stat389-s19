@@ -49,7 +49,7 @@ The code below fits a very simply random forest model. The most only has a singl
 split (maxnodes = 2 gives a single split with two outputs), always considers both
 variables (so the only randomness is the sample of data used), and only uses one
 tree. This is basically a decision tree on a random subset of the training data.
-The plot shows the predictions using color and puts a dot any misclassified data 
+The plot shows the predictions using color and puts a dot any misclassified data
 points. You can run this without making any changes:
 
 ```{r}
@@ -69,7 +69,7 @@ Rerun the same block of code a few times. Notice that (1) the split tends to be 
 0.5 and (2) sometimes a split on x1 is used and sometimes a splint on x2 is used. Make
 sure you understand both of these conditions.
 
-Now, copy the code above in the block below. Change the maximum number of nodes to 
+Now, copy the code above in the block below. Change the maximum number of nodes to
 three and observe what the output looks like. Run it a couple of times to see the
 variation in each output. Can you deduce what the decision tree looks like each
 time?

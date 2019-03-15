@@ -1,0 +1,58 @@
+---
+title: "Lab 14"
+author: ""
+output: html_notebook
+---
+
+# Set-up
+
+Read in the following libraries and to load the metadata about
+the flowers:
+
+```{r}
+library(readr)
+library(dplyr)
+library(glmnet)
+
+f17 <- read_csv("https://statsmaths.github.io/ml_data/flowers_17.csv")
+```
+
+To get the actual data for the images, you'll have to download the following
+file.
+
+- https://github.com/statsmaths/ml_data/releases/download/v1/flowers_17_x64.rds
+
+Once this is downloaded, you'll have to run something like this:
+
+```{r}
+x64 <- read_rds("~/Desktop/flowers_17_x64.rds")
+```
+
+If, for example, the file sits on your Desktop and you have a Mac. If you have
+trouble with any of this, please let me know as soon as possible.
+
+
+# Lab 14
+
+
+
+
+
+
+
+
+
+
+
+# Submission
+
+The code below assumes that you have added a prediction named
+`pred` to every row of the dataset.
+
+```{r}
+submit <- select(flights, obs_id, train_id)
+submit <- mutate(submit, pred = pred)
+write_csv(submit, "class14_submit.csv")
+```
+
+Now, upload the csv file to GitHub and you are done.
