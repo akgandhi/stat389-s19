@@ -1,7 +1,7 @@
 ---
 title: "Lab 12"
 author: ""
-output: html_notebook
+output: html_document
 ---
 
 ```{r, message=FALSE}
@@ -31,13 +31,13 @@ df <- NULL
 for (d in c(3, 10, 50, 100, 1000, 10000))
 {
   X <- matrix(runif(n * d, min = -1, max = 1), ncol = d)
-  dist <- sqrt(apply(X, 2, median))
+  dist <- sqrt(apply(X^2, 1, mean))
   df <- bind_rows(df, tibble(d = d, dist = dist))
 }
 
 ggplot(df, aes(dist)) +
   geom_histogram(bins = 100, color = "black", fill = "white") +
-  facet_wrap(~d, scale = "free_x") +
+  facet_wrap(~d, scale = "free") +
   geom_vline(xintercept = 0, color = "white")
 ```
 
@@ -50,7 +50,7 @@ the plot demonstrate this for the median?).
 
 We will need one new package today. You can install it with:
 
-```{r}
+```{r, message=FALSE}
 if (!require(mgcv))
 {
   install.packages("mgcv")
@@ -169,8 +169,8 @@ model <- gam(median_house_value ~ s(latitude, longitude) + s(mean_household_inco
              data = housing,
              subset = train_id == "train")
 
-housing <- mutate(housing, pred = predict(model, newdata = housing))
-sqrt(tapply((housing$median_house_value - housing$pred)^2, housing$train_id, mean))
+pred <- predict(model, newdata = housing)
+sqrt(tapply((housing$median_house_value - pred)^2, housing$train_id, mean))
 ```
 
 ### Best model
@@ -180,7 +180,13 @@ above, build a model that you think will be maximally predictive. You are
 free to be as creative as you would like short of using external datasets.
 
 ```{r}
+### NOTE: THIS IS JUST AN EXAMPLE, YOU MAY HAVE SOMETHING DIFFERENT
 
+model <- gam(median_house_value ~ s(latitude, longitude) + s(mean_household_income, median_household_income),
+             data = housing,
+             subset = train_id == "train")
+
+pred <- predict(model, newdata = housing)
 ```
 
 
