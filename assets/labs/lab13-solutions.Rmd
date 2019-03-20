@@ -1,0 +1,272 @@
+---
+title: "Lab 13"
+author: ""
+output: html_document
+---
+
+```{r, message=FALSE, warning=FALSE}
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(glmnet)
+
+theme_set(theme_minimal())
+```
+
+## The randomForest and xgboost packages
+
+We will need two new packages today. You can install it with:
+
+```{r, message=FALSE, warning=FALSE}
+if (!require(xgboost))
+{
+  install.packages("xgboost")
+}
+if (!require(randomForest))
+{
+  install.packages("randomForest")
+}
+
+library(xgboost)
+library(randomForest)
+```
+
+## Simulation with randomForest
+
+I think it is useful to do some simulations with trees to get a better grasp
+on exactly how they are using the data to do predictions. Let's make a simulated
+dataset with 10k points and a data matrix with just two columns. The two columns
+are sampled uniformily in $[0,1]$. The output variable y will be 1 when the first
+variable is larger than the second and 0 otherwise.
+
+```{r}
+n <- 10000
+X <- matrix(runif(n * 2), ncol=2)
+y <- as.numeric(X[,1] > X[,2])
+```
+
+The code below fits a very simply random forest model. The most only has a single
+split (maxnodes = 2 gives a single split with two outputs), always considers both
+variables (so the only randomness is the sample of data used), and only uses one
+tree. This is basically a decision tree on a random subset of the training data.
+The plot shows the predictions using color and puts a dot any misclassified data
+points. You can run this without making any changes:
+
+```{r}
+model <- randomForest(X, factor(y), mtry = 2, maxnodes = 2, ntree = 1)
+pred <- predict(model, newdata = X)
+
+df <- tibble(y = y, x1 = X[,1], x2 = X[,2], pred = pred)
+
+df %>%
+  ggplot(aes(x1, x2)) +
+    geom_point(aes(color = pred)) +
+    geom_point(color = "black", size=0.2, data = filter(df, pred != y)) +
+    geom_abline(slope = 1, intercept = 0)
+```
+
+Rerun the same block of code a few times. Notice that (1) the split tends to be around
+0.5 and (2) sometimes a split on x1 is used and sometimes a splint on x2 is used. Make
+sure you understand both of these conditions.
+
+Now, copy the code above in the block below. Change the maximum number of nodes to
+three and observe what the output looks like. Run it a couple of times to see the
+variation in each output. Can you deduce what the decision tree looks like each
+time?
+
+```{r}
+model <- randomForest(X, factor(y), mtry = 2, maxnodes = 3, ntree = 1)
+pred <- predict(model, newdata = X)
+
+df <- tibble(y = y, x1 = X[,1], x2 = X[,2], pred = pred)
+
+df %>%
+  ggplot(aes(x1, x2)) +
+    geom_point(aes(color = pred)) +
+    geom_point(color = "black", size=0.2, data = filter(df, pred != y)) +
+    geom_abline(slope = 1, intercept = 0)
+```
+
+Copy the code below once more. Change maxnodes to 5 and observe how
+the tree is trying to estimate the line with slope one and intercept zero.
+Increase the maxnodes again to 20 and take note of how well this model
+does compared to the simplier trees.
+
+```{r}
+model <- randomForest(X, factor(y), mtry = 2, maxnodes = 20, ntree = 1)
+pred <- predict(model, newdata = X)
+
+df <- tibble(y = y, x1 = X[,1], x2 = X[,2], pred = pred)
+
+df %>%
+  ggplot(aes(x1, x2)) +
+    geom_point(aes(color = pred)) +
+    geom_point(color = "black", size=0.2, data = filter(df, pred != y)) +
+    geom_abline(slope = 1, intercept = 0)
+```
+
+Copy the code one more time. Set maxnodes back to 2, but increase ntree
+to 3 and run the code a few times. You'll see that sometimes it looks like
+a single split and sometimes it looks like two splits. What is going on?
+
+```{r}
+model <- randomForest(X, factor(y), mtry = 2, maxnodes = 2, ntree = 3)
+pred <- predict(model, newdata = X)
+
+df <- tibble(y = y, x1 = X[,1], x2 = X[,2], pred = pred)
+
+df %>%
+  ggplot(aes(x1, x2)) +
+    geom_point(aes(color = pred)) +
+    geom_point(color = "black", size=0.2, data = filter(df, pred != y)) +
+    geom_abline(slope = 1, intercept = 0)
+```
+
+## Flights dataset
+
+The dataset for this lab is a collection of domestic flights within
+the U.S. during the year 2013. There are quite a large number of rows
+(400k) but a limited number of columns. Some of the most important columns,
+however, are categorical with a large number of values.
+
+```{r, message=FALSE}
+flights <- read_csv("https://github.com/statsmaths/ml_data/blob/master/flights_small.csv?raw=true")
+ocol <- ncol(flights)
+flights
+```
+
+Below I want you to use five different approaches to predict whether a flight
+will be delayed. Each time, produce (1) the mis-classification rate on the training
+and validation sets and (2) where applicable, produce a summary of what variables
+are most important in the prediction model. Generally, just use all of the variables,
+though you'll have a bit more freedom to experiment with what terms to smooth and
+interact together in the GAM. I have kept from specifying some of the exact details.
+Play around with what seems to work best... also, make sure you are saving the script
+frequently in case something crashes!
+
+1. Fit an elastic net model using cross-validation:
+
+```{r}
+X <- model.matrix( ~ -1 + ., data = flights[,seq(4, ocol)])
+y <- flights$delayed
+
+X_train <- X[flights$train_id == "train",]
+y_train <- y[flights$train_id == "train"]
+
+model <- cv.glmnet(X_train, y_train, family="binomial")
+
+pred <- as.numeric(predict(model, newx = X) > 0)
+sqrt(tapply((flights$delayed == pred)^2, flights$train_id, mean))
+```
+
+It will also be useful to see what the most important variables in the model are:
+
+```{r}
+B <- coef(model, s = model$lambda[5])
+B[B[,1] != 0,,drop=FALSE]
+```
+
+
+2. Fit a KNN model:
+
+```{r}
+X <- model.matrix( ~ -1 + ., data = flights[,seq(4, ocol)])
+y <- flights$delayed
+
+X_train <- X[flights$train_id == "train",]
+y_train <- y[flights$train_id == "train"]
+X_valid <- X[flights$train_id == "valid",]
+y_valid <- y[flights$train_id == "valid"]
+
+for (k in c(3, 10, 25, 50, 100))
+{
+  pred_valid <- FNN::knn(X_train, X_valid, y_train, k=k)
+  print(sqrt(mean((pred_valid == y_valid)^2)))
+}
+```
+
+3. Fit a GAM:
+
+```{r}
+library(mgcv)
+
+model <- gam(delayed ~ origin + dest + s(dep_hour, arr_hour, distance),
+             data = flights,
+             family = binomial(),
+             subset = train_id == "train")
+
+pred <- as.numeric(predict(model, newdata = flights) > 0)
+
+sqrt(tapply((flights$delayed == pred)^2, flights$train_id, mean))
+```
+
+4. Fit a random forest model:
+
+```{r}
+flights2 <- flights
+flights2$origin <- factor(flights2$origin)
+flights2$dest <- factor(flights2$dest)
+flights2$carrier <- factor(flights2$carrier)
+
+model <- randomForest(factor(delayed) ~ month + weekday + arr_hour + dep_hour + origin + dest + distance + carrier,
+                      data = flights2,
+                      subset = train_id == "train",
+                      ntree = 100, maxnodes = 15)
+
+pred <- as.numeric(predict(model, newdata = flights2)) - 1L
+
+tapply(flights$delayed == pred, flights$train_id, mean)
+```
+
+5. Fit a gradient boosted tree:
+
+```{r}
+X <- model.matrix( ~ -1 + ., data = flights[,seq(4, ncol(flights))])
+y <- flights$delayed
+
+X_train <- X[flights$train_id == "train",]
+y_train <- y[flights$train_id == "train"]
+X_valid <- X[flights$train_id == "valid",]
+y_valid <- y[flights$train_id == "valid"]
+
+data_train <- xgb.DMatrix(data = X_train, label = y_train)
+data_valid <- xgb.DMatrix(data = X_valid, label = y_valid)
+
+watchlist <- list(train=data_train, valid=data_valid)
+
+model <- xgb.train(data = data_train,
+                   max_depth = 5, eta = 0.003, nthread = 2,
+                   nrounds = 100,
+                   objective = "binary:logistic",
+                   watchlist = watchlist,
+                   verbose=1, print_every_n=10, early_stopping_rounds = 100)
+```
+
+```{r}
+importance_matrix <- xgb.importance(model = model)
+importance_matrix
+```
+
+## Best solution
+
+Now, as with last time, build the best possible model you can to
+predict the output. Feel free to make use of the validation set
+to fit the final model (this is certainly not a requirement, just
+a suggestion).
+
+```{r}
+
+```
+
+## Submitting your solutions
+
+Finally, once you have your predictions saved as a variable called `pred`,
+run the following code to produce your your results:
+
+```{r}
+submit <- select(flights, obs_id, train_id)
+submit <- mutate(submit, pred = pred)
+write_csv(submit, "class13_submit.csv")
+```
+
+Now, upload the csv file to GitHub and you are done.

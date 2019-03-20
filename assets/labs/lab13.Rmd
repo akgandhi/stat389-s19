@@ -107,12 +107,11 @@ a single split and sometimes it looks like two splits. What is going on?
 ## Flights dataset
 
 The dataset for this lab is a collection of domestic flights within
-the U.S. during the year 2013. There are quite a large number of rows
-(400k) but a limited number of columns. Some of the most important columns,
-however, are categorical with a large number of values.
+the U.S. during the year 2013. Some of the most important columns,
+are categorical with a large number of values.
 
 ```{r, message=FALSE}
-flights <- read_csv("https://statsmaths.github.io/ml_data/flights.csv")
+flights <- read_csv("https://github.com/statsmaths/ml_data/blob/master/flights_small.csv?raw=true")
 flights
 ```
 
