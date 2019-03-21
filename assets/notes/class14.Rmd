@@ -49,7 +49,7 @@ flowers
 
 Then, we also have to grab the image data itself. To do this, first download the dataset here:
 
-- [https://github.com/statsmaths/ml_data/releases/download/v1/flowers_17_x64.rds](flowers_17_x64.rds)
+- [https://github.com/statsmaths/ml_data/releases/download/v1/flowers_17_x64.rds](https://github.com/statsmaths/ml_data/releases/download/v1/flowers_17_x64.rds)
 
 Save it somewhere on your computer and then read it into R:
 
