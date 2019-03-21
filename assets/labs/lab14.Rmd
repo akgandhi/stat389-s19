@@ -56,7 +56,7 @@ The code below assumes that you have added a prediction named
 `pred` to every row of the dataset.
 
 ```{r}
-submit <- select(flights, obs_id, train_id)
+submit <- select(f17, obs_id, train_id)
 submit <- mutate(submit, pred = pred)
 write_csv(submit, "class14_submit.csv")
 ```
