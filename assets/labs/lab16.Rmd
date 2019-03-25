@@ -1,0 +1,53 @@
+---
+title: "Lab 16: Crime Type Prediction"
+author: ""
+output: html_notebook
+---
+
+# Set-up
+
+Read in the following libraries and to load the metadata about
+the flowers:
+
+```{r}
+library(readr)
+library(dplyr)
+library(ggplot2)
+
+crimes <- read_csv("https://statsmaths.github.io/ml_data/chi_crimes_5.csv")
+```
+
+The names of the crimes are, in order:
+
+```{r}
+c("criminal_damage", "narcotics", "prostitution", "robbery", "theft")
+```
+
+Make sure that your predictions are either `1`, `2`, `3`, `4` or `5`.
+
+
+# Todays lab
+
+
+
+
+
+
+
+
+
+
+
+
+# Submission
+
+The code below assumes that you have added a prediction named
+`pred` to every row of the dataset.
+
+```{r}
+submit <- select(f17, obs_id, train_id)
+submit <- mutate(submit, pred = pred)
+write_csv(submit, "class14_submit.csv")
+```
+
+Now, upload the csv file to GitHub and you are done.

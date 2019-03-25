@@ -73,7 +73,7 @@ I want you to fit the six models in the code below. In each block of
 code, fit the model on just the training set, make predictions on the original
 dataset, and use the `tapply` function to print out the RMSE for the training and
 validation sets. **I know this sounds counterintuitive, but I encourage you to
-overwrite the variables in each section (i.e., call all the models `model` and 
+overwrite the variables in each section (i.e., call all the models `model` and
 all of the predictions `pred`.** It will save you a lot of trouble over time.
 
 1. Use a linear regression (feel free to use the `gam` function with no modifications)

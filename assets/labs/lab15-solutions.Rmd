@@ -1,0 +1,158 @@
+---
+title: "Lab 15: Tract Income Prediction"
+author: ""
+output: html_document
+---
+
+# Set-up
+
+Read in the following libraries and to load the metadata about
+the flowers:
+
+```{r}
+library(readr)
+library(dplyr)
+library(glmnet)
+
+tract <- read_csv("https://statsmaths.github.io/ml_data/tract_median_income.csv")
+ocol <- ncol(tract)
+```
+
+Your task is to predict the median income of each tract based on the other
+demographic features in the tract using neural networks
+
+# Todays lab
+
+Similar to other labs, we will start by trying some of the other models that
+we have seen so far. I think the two most reasonable are the elastic net and
+gradient boosted trees. Try to fit an elastic net on the dataset here and
+report the RMSE on the training and validation sets:
+
+```{r}
+X <- model.matrix( ~ -1 + ., data = tract[,seq(4, ocol)])
+y <- tract$median_income
+
+X_train <- X[tract$train_id == "train",]
+y_train <- y[tract$train_id == "train"]
+
+model <- cv.glmnet(X_train, y_train, nfolds=3)
+
+pred <- predict(model, newx = X)
+sqrt(tapply((tract$median_income - pred)^2, tract$train_id, mean))
+```
+
+Now, try to fit a gradient boosted tree and
+report the RMSE on the training and validation sets:
+
+```{r}
+library(xgboost)
+X <- model.matrix( ~ -1 + ., data = tract[,seq(4, ocol)])
+y <- tract$median_income
+
+X_train <- X[tract$train_id == "train",]
+y_train <- y[tract$train_id == "train"]
+X_valid <- X[tract$train_id == "valid",]
+y_valid <- y[tract$train_id == "valid"]
+
+data_train <- xgb.DMatrix(data = X_train, label = y_train)
+data_valid <- xgb.DMatrix(data = X_valid, label = y_valid)
+
+watchlist <- list(train=data_train, valid=data_valid)
+
+model <- xgb.train(data = data_train,
+                   max_depth = 5, eta = 0.1, nthread = 2,
+                   nrounds = 20,
+                   objective = "reg:linear",
+                   watchlist = watchlist,
+                   verbose=1)
+
+pred <- predict(model, newdata = X)
+sqrt(tapply((tract$median_income - pred)^2, tract$train_id, mean))
+```
+
+## Neural network
+
+Finally, let's try to build a neural network for this dataset (Note: it does
+not actually make a lot of sense to use a neural network here; we will see
+better examples over the next week as we go back to image processing). Make
+sure that you have keras installed:
+
+```{r}
+library(keras)
+```
+
+Construct the dataset, keeping in mind that we need to scale the dataset
+before passing it to keras:
+
+```{r}
+X <- scale(model.matrix( ~ -1 + ., data = tract[,seq(4, ocol)]))
+y <- tract$median_income
+
+X_train <- X[tract$train_id == "train",]
+X_valid <- X[tract$train_id == "valid",]
+y_train <- y[tract$train_id == "train"]
+y_valid <- y[tract$train_id == "valid"]
+```
+
+Then, build a neural network using keras:
+
+```{r}
+model <- keras_model_sequential()
+model %>%
+  layer_dense(units = c(100), input_shape = ncol(X)) %>%
+  layer_activation(activation = "relu") %>%
+  layer_dense(units = 1)
+model
+```
+
+Compile the model:
+
+```{r}
+model %>% compile(
+  loss = 'mse',
+  optimizer = optimizer_rmsprop(),
+  metrics = c('mse')
+)
+```
+
+And fit the model
+
+```{r}
+model %>%
+  fit(X_train, y_train, epochs = 5,
+      validation_data = list(X_valid, y_valid))
+```
+
+Finally, prediction on the dataset and see how well it performs:
+
+```{r}
+pred <- predict(model, X)
+sqrt(tapply((tract$median_income - pred)^2, tract$train_id, mean))
+```
+
+Try to play around with some of the values in the network (learning rate,
+number of epochs, number of layers, sizes of the layers) to see how they
+effect the final model.
+
+
+# Best model
+
+Finally, re-run the best model here, run the final chunk, and upload your
+results to GitHub:
+
+```{r}
+
+```
+
+# Submission
+
+The code below assumes that you have added a prediction named
+`pred` to every row of the dataset.
+
+```{r}
+submit <- select(tract, obs_id, train_id)
+submit <- mutate(submit, pred = pred)
+write_csv(submit, "class15_submit.csv")
+```
+
+Now, upload the csv file to GitHub and you are done.

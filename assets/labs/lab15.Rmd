@@ -1,55 +1,115 @@
 ---
-title: "Lab 15"
+title: "Lab 15: Tract Income Prediction"
 author: ""
 output: html_notebook
 ---
 
-# Set up
+# Set-up
 
-Read in the following libraries and to load the crimes dataset:
+Read in the following libraries and to load the metadata about
+the flowers:
 
 ```{r}
 library(readr)
 library(dplyr)
-library(ggplot2)
-library(viridis)
+library(glmnet)
 
-crimes <- read_csv("https://statsmaths.github.io/ml_data/chi_crimes_12.csv")
+tract <- read_csv("https://statsmaths.github.io/ml_data/tract_median_income.csv")
+ocol <- ncol(tract)
 ```
 
-The names of the crimes are, in order:
+Your task is to predict the median income of each tract based on the other
+demographic features in the tract using neural networks
+
+# Todays lab
+
+Similar to other labs, we will start by trying some of the other models that
+we have seen so far. I think the two most reasonable are the elastic net and
+gradient boosted trees. Try to fit an elastic net on the dataset here and
+report the RMSE on the training and validation sets:
 
 ```{r}
-crimes_list <- c("theft", "battery", "criminal damage", "narcotics",
-"other offense", "assault", "burglary", "motor vehicle theft", "robbery",
-"deceptive practice", "criminal trespass", "prostitution")
+
 ```
 
-Make sure your predictions are all an integer from 1 to 12.
+Now, try to fit a gradient boosted tree and
+report the RMSE on the training and validation sets:
 
 ```{r}
-if (!require("keras")) {
-  install.packages("keras")
-}
+
 ```
 
-## Build neural networks
+## Neural network
 
-
-
-
-
-
-## Submitting your solutions
-
-Finally, once you have your predictions saved as a variable called `pred`,
-run the following code to produce your your results:
+Finally, let's try to build a neural network for this dataset (Note: it does
+not actually make a lot of sense to use a neural network here; we will see
+better examples over the next week as we go back to image processing). Make
+sure that you have keras installed:
 
 ```{r}
-submit <- select(flights, obs_id, train_id)
+library(keras)
+```
+
+Construct the dataset, keeping in mind that we need to scale the dataset
+before passing it to keras (I have done this for you already):
+
+```{r}
+X <- scale(model.matrix( ~ -1 + ., data = tract[,seq(4, ocol)]))
+y <- tract$median_income
+
+X_train <- X[tract$train_id == "train",]
+X_valid <- X[tract$train_id == "valid",]
+y_train <- y[tract$train_id == "train"]
+y_valid <- y[tract$train_id == "valid"]
+```
+
+Then, build a neural network using keras:
+
+```{r}
+
+```
+
+Compile the model:
+
+```{r}
+
+```
+
+And fit the model
+
+```{r}
+
+```
+
+Finally, prediction on the dataset and see how well it performs:
+
+```{r}
+
+```
+
+Try to play around with some of the values in the network (learning rate,
+number of epochs, number of layers, sizes of the layers) to see how they
+effect the final model.
+
+
+# Best model
+
+Finally, re-run the best model here, run the final chunk, and upload your
+results to GitHub:
+
+```{r}
+
+```
+
+# Submission
+
+The code below assumes that you have added a prediction named
+`pred` to every row of the dataset.
+
+```{r}
+submit <- select(tract, obs_id, train_id)
 submit <- mutate(submit, pred = pred)
 write_csv(submit, "class15_submit.csv")
 ```
 
 Now, upload the csv file to GitHub and you are done.
-
