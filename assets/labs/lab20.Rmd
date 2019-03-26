@@ -1,0 +1,58 @@
+---
+title: "Lab 20"
+author: ""
+output: html_document
+---
+
+# Set-up
+
+Read in the following libraries and to load the metadata about
+the flowers:
+
+```{r}
+library(readr)
+library(dplyr)
+library(glmnet)
+
+stl <- read_csv("https://statsmaths.github.io/ml_data/stl_10.csv")
+```
+
+To get the embeddings, download this file as well:
+
+```{r}
+X <- as.matrix(read_csv("https://statsmaths.github.io/ml_data/stl_10_vgg16_cnn.csv"))
+```
+
+
+
+
+# Todays lab
+
+The only thing you need to do today is to play around with different models
+and see how well they work. Once you are satisfied, pick the best model and
+incorporate the predictions into your output in the final chunk below. Note:
+I would suggest keeping each model in its own code chunk for readability.
+Also, save your work frequently as it is quite likely that you will crash
+R at some point.
+
+
+
+
+
+
+
+
+
+
+# Submission
+
+The code below assumes that you have added a prediction named
+`pred` to every row of the dataset.
+
+```{r}
+submit <- select(stl, obs_id, train_id)
+submit <- mutate(submit, pred = pred)
+write_csv(submit, "class20_submit.csv")
+```
+
+Now, upload the csv file to GitHub and you are done.

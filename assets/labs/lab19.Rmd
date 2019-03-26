@@ -1,0 +1,64 @@
+---
+title: "Lab 19"
+author: ""
+output: html_document
+---
+
+# Set-up
+
+Read in the following libraries and to load the metadata about
+the flowers:
+
+```{r}
+library(readr)
+library(dplyr)
+library(glmnet)
+
+emnist <- read_csv("https://statsmaths.github.io/ml_data/emnist_26.csv")
+```
+
+To get the actual data for the images, you'll have to download the mnist file
+from here:
+
+- https://drive.google.com/drive/folders/14k9wNUTUEB3hAjXS8wfXty5_uACu3ZXq
+
+Once this is downloaded, you'll have to run something like this:
+
+```{r}
+x64 <- read_rds("emnist_26_x28.rds")
+```
+
+If, for example, the file sits on your Desktop and you have a Mac. If you have
+trouble with any of this, please let me know as soon as possible.
+
+
+# Todays lab
+
+The only thing you need to do today is to play around with different models
+and see how well they work. Once you are satisfied, pick the best model and
+incorporate the predictions into your output in the final chunk below. Note:
+I would suggest keeping each model in its own code chunk for readability.
+Also, save your work frequently as it is quite likely that you will crash
+R at some point.
+
+
+
+
+
+
+
+
+
+
+# Submission
+
+The code below assumes that you have added a prediction named
+`pred` to every row of the dataset.
+
+```{r}
+submit <- select(emnist, obs_id, train_id)
+submit <- mutate(submit, pred = pred)
+write_csv(submit, "class19_submit.csv")
+```
+
+Now, upload the csv file to GitHub and you are done.

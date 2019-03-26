@@ -394,7 +394,7 @@ Let's read the data in now:
 
 ```{r, message = FALSE}
 emnist <- read_csv("https://statsmaths.github.io/ml_data/emnist_6.csv")
-X <- read_rds("/emnist_6_x28.rds")
+X <- read_rds("image_data/emnist_6_x28.rds")
 y <- emnist$class
 y_label <- emnist$class_name
 X_train <- X[emnist$train_id == "train",,,,drop = FALSE]
