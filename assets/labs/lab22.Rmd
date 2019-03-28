@@ -1,5 +1,5 @@
 ---
-title: "Lab 22"
+title: "Lab 21"
 author: ""
 output: html_document
 ---
@@ -14,7 +14,7 @@ library(readr)
 library(dplyr)
 library(glmnet)
 
-amazon <- read_csv("https://statsmaths.github.io/ml_data/amazon_product_stars.csv")
+imdb <- read_csv("https://statsmaths.github.io/ml_data/imdb.csv")
 ```
 
 If, for example, the file sits on your Desktop and you have a Mac. If you have
@@ -45,9 +45,9 @@ The code below assumes that you have added a prediction named
 `pred` to every row of the dataset.
 
 ```{r}
-submit <- select(amazon, obs_id, train_id)
+submit <- select(imdb, obs_id, train_id)
 submit <- mutate(submit, pred = pred)
-write_csv(submit, "class22_submit.csv")
+write_csv(submit, "class21_submit.csv")
 ```
 
 Now, upload the csv file to GitHub and you are done.

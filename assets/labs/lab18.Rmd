@@ -1,5 +1,5 @@
 ---
-title: "Lab 19"
+title: "Lab 17"
 author: ""
 output: html_document
 ---
@@ -14,7 +14,7 @@ library(readr)
 library(dplyr)
 library(glmnet)
 
-emnist <- read_csv("https://statsmaths.github.io/ml_data/emnist_26.csv")
+mnist <- read_csv("https://statsmaths.github.io/ml_data/mnist_10.csv")
 ```
 
 To get the actual data for the images, you'll have to download the mnist file
@@ -25,7 +25,7 @@ from here:
 Once this is downloaded, you'll have to run something like this:
 
 ```{r}
-x64 <- read_rds("emnist_26_x28.rds")
+x28 <- read_rds("mnist_10_x28.rds")
 ```
 
 If, for example, the file sits on your Desktop and you have a Mac. If you have
@@ -56,9 +56,9 @@ The code below assumes that you have added a prediction named
 `pred` to every row of the dataset.
 
 ```{r}
-submit <- select(emnist, obs_id, train_id)
+submit <- select(mnist, obs_id, train_id)
 submit <- mutate(submit, pred = pred)
-write_csv(submit, "class19_submit.csv")
+write_csv(submit, "class17_submit.csv")
 ```
 
 Now, upload the csv file to GitHub and you are done.

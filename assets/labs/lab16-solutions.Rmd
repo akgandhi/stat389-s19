@@ -1,7 +1,7 @@
 ---
 title: "Lab 16: Training Neural Networks"
 author: ""
-output: html_notebook
+output: html_document
 ---
 
 ```{r, message=FALSE}
@@ -119,15 +119,15 @@ for (iter in seq_len(num_iter))
     a <- sigma(z)
     w <- as.numeric(c + gamma %*% a)
 
-    c <- c - rho * (FIXME)
+    c <- c - rho * (w - y[snum])
     for (k in seq(p))
     {
-      alpha[k] <- alpha[k] - rho * FIXME
+      alpha[k] <- alpha[k] - rho * (w - y[snum]) * gamma[k] * sigma_prime(z[k])
       for (j in seq_len(ncol(X)))
       {
-        B[j, k] <- B[j, k] - rho * FIXME
+        B[j, k] <- B[j, k] - rho * (w - y[snum]) * gamma[k] * sigma_prime(z[k]) * X[snum, j]
       }
-      gamma[k] <- gamma[k] - rho * FIXME
+      gamma[k] <- gamma[k] - rho * (w - y[snum]) * a[k]
     }
   }
 
@@ -160,7 +160,48 @@ wine <- read_csv("https://statsmaths.github.io/ml_data/wine.csv")
 ocol <- ncol(wine)
 ```
 
+Create the training data:
 
+```{r}
+X <- scale(model.matrix( ~ -1 + ., data = wine[,seq(4, ocol)]))
+y <- wine$quality
+
+X_train <- X[wine$train_id == "train",]
+X_valid <- X[wine$train_id == "valid",]
+y_train <- y[wine$train_id == "train"]
+y_valid <- y[wine$train_id == "valid"]
+```
+
+Create the model, compile, and train
+
+```{r}
+library(keras)
+
+model <- keras_model_sequential()
+model %>%
+  layer_dense(units = c(64), input_shape = ncol(X)) %>%
+  layer_activation(activation = "relu") %>%
+  layer_dense(units = c(64), input_shape = ncol(X)) %>%
+  layer_activation(activation = "relu") %>%
+  layer_dense(units = 1)
+
+model %>% compile(
+  loss = 'mse',
+  optimizer = optimizer_rmsprop(),
+  metrics = c('mse')
+)
+
+model %>%
+  fit(X_train, y_train, epochs = 5,
+      validation_data = list(X_valid, y_valid))
+```
+
+Now, fit the data and evaluate:
+
+```{r}
+pred <- predict(model, X)
+sqrt(tapply((wine$quality - pred)^2, wine$train_id, mean))
+```
 
 
 ## Submitting your solutions
@@ -169,7 +210,7 @@ Finally, once you have your predictions saved as a variable called `pred`,
 run the following code to produce your your results:
 
 ```{r}
-submit <- select(housing, obs_id, train_id)
+submit <- select(wine, obs_id, train_id)
 submit <- mutate(submit, pred = pred)
 write_csv(submit, "class16_submit.csv")
 ```

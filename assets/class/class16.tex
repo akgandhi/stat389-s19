@@ -1,0 +1,303 @@
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\documentclass[12pt,hidelinks]{article}
+
+% 1. Load LaTeX packages
+\usepackage{fontspec}
+\usepackage{geometry}
+\usepackage{lastpage}
+\usepackage{fancyhdr}
+\usepackage{hyperref}
+\usepackage{amsmath}
+\usepackage{amsthm}
+\usepackage{xunicode}
+\usepackage{listings}
+\usepackage{xcolor}
+\usepackage{amssymb}
+
+% 2. Define page dimensions and spacing
+\geometry{top=1in, bottom=1in, left=1in, right=1in, marginparsep=4pt,
+          marginparwidth=1in}
+\setlength{\parindent}{0pt}
+\setlength{\parskip}{12pt}
+
+% 3. Set header, footer, and bibliography
+\renewcommand{\headrulewidth}{0pt}
+\pagestyle{fancyplain}
+\fancyhf{}
+\lfoot{}
+\rfoot{page \thepage\ of \pageref{LastPage}}
+\bibliographystyle{acm}
+
+% 4. Set fonts for the document
+\defaultfontfeatures{Mapping=tex-text}
+\setromanfont{YaleNew}
+
+% 5. Define custom code for book environments and commands
+\DeclareMathOperator*{\argmin}{arg\,min}
+\DeclareMathOperator*{\argmax}{arg\,max}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\pkg}[1]{\textbf{#1}}
+
+% 6. Define custom code for book environments and commands
+\definecolor{verbgray}{gray}{0.9}
+\definecolor{verbgray2}{gray}{0.975}
+\definecolor{solarized@magenta}{HTML}{D33682}
+\newcommand{\magenta}[1]{\textcolor{solarized@magenta}{#1}}
+
+\lstnewenvironment{rcode}{%
+  \lstset{backgroundcolor=\color{verbgray},
+  frame=single,
+  framerule=0pt,
+  basicstyle=\ttfamily,
+  keepspaces=true,
+  columns=fullflexible}}{}
+
+\lstnewenvironment{rres}{%
+  \lstset{backgroundcolor=\color{verbgray2},
+  frame=single,
+  framerule=0pt,
+  basicstyle=\ttfamily,
+  keepspaces=true,
+  columns=fullflexible}}{}
+
+% 7. Define numbering scheme for equations (only needed for handout).
+\numberwithin{equation}{section}
+\setcounter{section}{11}
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+\begin{document}
+
+{\LARGE Handout 16: Training Neural Networks}
+
+\vspace*{18pt}
+
+\textbf{Gradient Descent}
+
+Gradient descent is an iterative
+algorithm for finding the minimum value of a function $f(b)$. It updates
+to a new value by the formula
+\begin{align}
+b_{new} &= b_{old} - \eta \cdot \nabla_{b} f (b_{old}),
+\end{align}
+for a fixed learning rate $\eta$. At each step it moves in the direction
+the function locally appears to be decreasing the fastest, at a rate
+proportional to how fast it seems to be decreasing. Gradient descent is
+a good algorithm choice for neural networks. Faster second-order methods
+involve the Hessian matrix, which requires the computation
+of a square matrix with dimensions equal to the number of unknown parameters.
+Even relatively small neural networks have tens of thousands of parameters
+making storage and computation of the Hessian matrix infeasible. Conversely,
+we will see today that the gradient can be computed
+relatively quickly.
+
+\textbf{Stochastic Gradient Descent (SGD)}
+
+Neural networks generally need many thousands of iterations to converge to
+a reasonable minimizer of the loss function. With large datasets
+and models, while still feasible, gradient descent can become quite slow.
+Stochastic gradient descent (SGD) is a way of incrementally updating
+the weights in the model without needing to work with the entire
+dataset at each step. To understand the derivation of SGD, first
+consider updates in ordinary gradient descent:
+\begin{align}
+\left( b^{(0)} - \eta \cdot \nabla_b f \right) \, &\rightarrow \, b^{(1)}
+\end{align}
+Notice that for squared error loss (it is also true for most other
+loss functions), the loss can be written as a sum of component losses
+for each observation. The gradient, therefore, can also be written
+as a sum of terms over all of the data points.
+\begin{align}
+f(b) &= \sum_i (\widehat{y}_i(b) - y_i)^2 \\
+&= \sum_i f_i(b) \\
+\nabla_w f &= \sum_i \nabla_w f_i
+\end{align}
+This means that we could write gradient descent as a series of
+n steps over each of the training observations.
+\begin{align}
+\left( b^{(0)} - (\eta / n) \cdot \nabla_{b^{(0)}} f_1 \right) \, &\rightarrow \, b^{(1)} \\
+\left( b^{(1)} - (\eta / n) \cdot \nabla_{b^{(0)}} f_2 \right) \, &\rightarrow \, b^{(2)} \\
+&\vdots \\
+\left( b^{(n-1)} - (\eta / n) \cdot \nabla_{b^{(0)}} f_n \right) \, &\rightarrow \, b^{(n)} \\
+\end{align}
+The output $b^{(n)}$ here is exactly equivalent to the $b^{(1)}$ from before.
+
+The SGD algorithm actually does the updates in an iterative fashion, but
+makes one small modification. In each step it updates the gradient with respect
+to the new set of weights. Writing $\eta'$ as $\eta$ divided by the sample size,
+we can write this as:
+\begin{align}
+\left( b^{(0)} - \eta' \cdot \nabla_{b^{(0)}} f_1 \right) \, &\rightarrow \, b^{(1)} \\
+\left( b^{(1)} - \eta' \cdot \nabla_{b^{(1)}} f_2 \right) \, &\rightarrow \, b^{(2)} \\
+&\vdots \\
+\left( b^{(n-1)} - \eta' \cdot \nabla_{b^{(n)}} f_n \right) \, &\rightarrow \, b^{(n)}
+\end{align}
+In comparison to the standard gradient descent algorithm, the approach of SGD
+should seem reasonable. Why work with old weights in each step when we already
+know what direction the vector $b$ is moving? Notice that SGD does not involve
+any stochastic features other than being sensitive to the ordering of the
+dataset. The name is an anachronism stemming from the original paper of
+Robbins and Monro which suggested randomly selecting the data point in each
+step instead of cycling through all of the training data in one go.
+
+In the language of neural networks, one pass through the entire dataset is
+called an \textit{epoch}. It results in as many iterations as there are
+observations in the training set. A common variant of SGD, and the most
+frequently used in the training of neural networks, modifies the procedure
+to something between pure gradient descent and pure SGD. Training
+data are grouped into mini-batches, typically of about 32--64 points, with
+gradients computed and parameters updated over the entire mini-batch. The
+benefits of this tweak are two-fold. First, it allows for faster computations
+as we can vectorize the gradient calculations of the entire mini-batch.
+Secondly, there is also empirical research suggesting that the
+mini-batch approach stops the SGD algorithm from getting stuck in saddle
+points.
+
+\textbf{Backwards Propagation of Errors}
+
+In order to apply SGD to neural networks, we need to be able to
+compute the gradient of the loss function with respect to all of
+the trainable parameters in the model. For dense neural networks,
+the relationship between any parameter and the loss is given by
+the composition of linear functions, the activation function $\sigma$,
+and the chosen loss function. Given that activation and loss functions
+are generally well-behaved, in theory computing the gradient function
+should be straightforward for a given network. However, recall that
+we need to have thousands of iterations in the SGD algorithm and that
+even small neural networks typically have thousands of parameters.
+An algorithm for computing gradients as efficiently as possible is
+essential. We also want an algorithm that can be coded in a
+generic way that can then be used for models with an arbitrary
+number of layers and neurons in each layer.
+
+The backwards propagation of errors, or just \textit{backpropagation},
+is the standard algorithm for computing
+gradients in a neural network. It is conceptually based on applying
+the chain rule to each layer of the network in reverse order. The first
+step consists in inserting an input $x$ into the first layer and then
+propagating the outputs of each hidden layer through to the final
+output. All of the intermediate outputs are stored. Derivatives with
+respect to parameters in the last layer are calculated directly. Then,
+derivatives are calculated showing how changing the parameters in any
+internal layer affect the output of just that layer. The chain rule is
+then used to compute the full gradient in terms of these intermediate
+quantities with one pass backwards through the network. The conceptual
+idea behind backpropagation can be applied to any hierarchical model
+described by a directed acyclic graph (DAG). You will now work out the
+algorithm for a simple example with just a single set of hidden neurons.
+
+\textbf{Exercises}
+
+Assume that we have a neural network with one hidden layer, defined as (where
+$x$ is one row of the input matrix, $y$ is the corresponding output value, and
+we have a layer of $T$ hidden nodes in the network):
+
+\begin{align}
+z_k &= \alpha_k + \sum_{j=1}^{P} B_{j, k} \cdot x_j, \quad k = 1, \ldots, T \\
+a_k &= \sigma(z_k), \quad k = 1, \ldots, T \\
+w &= c + \sum_{k=1}^T \gamma_k a_k
+\end{align}
+
+Where $\sigma$ is a differentiable activation function. The terms $c$,
+$\gamma_k$, and $B_{j, k}$ are the parameters that define the model.
+We want to minimize the quantity (the loss function):
+
+\begin{align}
+L(w, y) &= \frac{1}{2} \cdot (w - y)^2.
+\end{align}
+
+We need to compute a number of partial derivatives, which we will do using the
+chain rule. It is important that you don't jump ahead and plug things in before I
+ask you to.
+
+\textbf{Step 1}: Compute the partial derivative of:
+
+\begin{flalign*}
+\frac{\partial z_k}{\partial B_{j, k}} &= &&
+\end{flalign*}
+
+Note that $z_k$ does not depend on $B_{j, m}$ if $m\neq k$, so we do not need
+to worry about those terms.
+
+\textbf{Step 2}: Compute the partial derivative of (yes, this is easy):
+
+\begin{flalign*}
+\frac{\partial z_k}{\partial \alpha_k} &= &&
+\end{flalign*}
+
+\textbf{Step 3}: Write down a formula for the following using the notation
+$\sigma'(\cdot)$ to denote the derivative of $\sigma$.
+
+\begin{flalign*}
+\frac{\partial a_k}{\partial z_k} &= &&
+\end{flalign*}
+
+\textbf{Step 4}: Write down a formula for:
+
+\begin{flalign*}
+\frac{\partial w}{\partial \gamma_k} &= &&
+\end{flalign*}
+
+\textbf{Step 5}: What is the following (yes, this is easy also):
+
+\begin{flalign*}
+\frac{\partial w}{\partial c} &= &&
+\end{flalign*}
+
+\textbf{Step 6}: Finally, what is the derivative of the loss function with
+respect to $w$:
+
+\begin{flalign*}
+\frac{\partial L}{\partial w} &= &&
+\end{flalign*}
+
+\textbf{Step 7}: Notice that I can use the chain rule to write the following,
+the derivative with respect to each tunable parameter in the second layer of
+the model:
+
+\begin{align}
+\frac{\partial L}{\partial c} &= \frac{\partial L}{\partial w} \cdot \frac{\partial w}{\partial c} \\
+\frac{\partial L}{\partial \gamma_k} &= \frac{\partial L}{\partial w} \cdot \frac{\partial w}{\partial \gamma_k}
+\end{align}
+
+Now, plug in the values that you know to compute each of these:
+
+\begin{flalign*}
+\frac{\partial L}{\partial c} &= && \\
+\frac{\partial L}{\partial \gamma_k} &= &&
+\end{flalign*}
+
+\textbf{Step 8}: What about the terms $B_{j, k}$ and $\alpha_k$? They are in
+the hidden layer
+and require one more step:
+
+\begin{align}
+\frac{\partial L}{\partial B_{j, k}} &= \frac{\partial L}{\partial z_k} \cdot \frac{\partial z_k}{\partial B_{j, k}} \label{import} \\
+&= \frac{\partial L}{\partial w} \cdot \frac{\partial w}{\partial a_k} \cdot \frac{\partial a_k}{\partial z_k} \cdot \frac{\partial z_k}{\partial B_{j, k}}
+\end{align}
+
+And:
+
+\begin{align}
+\frac{\partial L}{\partial \alpha_k} &= \frac{\partial L}{\partial z_k} \cdot \frac{\partial z_k}{\partial B_{j, k}} \label{import2} \\
+&= \frac{\partial L}{\partial w} \cdot \frac{\partial w}{\partial a_k} \cdot \frac{\partial a_k}{\partial z_k} \cdot \frac{\partial z_k}{\partial \alpha_k}
+\end{align}
+
+But, you do know all of these terms. Plug them in to get the partial derivative
+with respect to $B_{j, k}$ and $\alpha_k$.
+
+\begin{flalign*}
+\frac{\partial L}{\partial B_{j, k}} &= && \\
+\frac{\partial L}{\partial \alpha_k} &= &&
+\end{flalign*}
+
+\textbf{Summary}
+
+The most important lines to understand here are Equations~\ref{import} and \ref{import2}.
+They show the core back propagation logic: decomposing the influence of a parameter
+to (i) how it influences the output of that layer and (ii) how that layer influences
+the loss. This make it possible, with just a little bit more notation, to compute
+gradients for the deepest of neural networks.
+
+
+\end{document}
+

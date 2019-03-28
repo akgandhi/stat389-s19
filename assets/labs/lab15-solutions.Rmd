@@ -61,7 +61,7 @@ watchlist <- list(train=data_train, valid=data_valid)
 
 model <- xgb.train(data = data_train,
                    max_depth = 5, eta = 0.1, nthread = 2,
-                   nrounds = 20,
+                   nrounds = 200,
                    objective = "reg:linear",
                    watchlist = watchlist,
                    verbose=1)

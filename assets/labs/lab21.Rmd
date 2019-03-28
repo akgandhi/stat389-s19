@@ -1,5 +1,5 @@
 ---
-title: "Lab 21"
+title: "Lab 20"
 author: ""
 output: html_document
 ---
@@ -14,11 +14,16 @@ library(readr)
 library(dplyr)
 library(glmnet)
 
-imdb <- read_csv("https://statsmaths.github.io/ml_data/imdb.csv")
+stl <- read_csv("https://statsmaths.github.io/ml_data/stl_10.csv")
 ```
 
-If, for example, the file sits on your Desktop and you have a Mac. If you have
-trouble with any of this, please let me know as soon as possible.
+To get the embeddings, download this file as well:
+
+```{r}
+X <- as.matrix(read_csv("https://statsmaths.github.io/ml_data/stl_10_vgg16_cnn.csv"))
+```
+
+
 
 
 # Todays lab
@@ -45,9 +50,9 @@ The code below assumes that you have added a prediction named
 `pred` to every row of the dataset.
 
 ```{r}
-submit <- select(imdb, obs_id, train_id)
+submit <- select(stl, obs_id, train_id)
 submit <- mutate(submit, pred = pred)
-write_csv(submit, "class21_submit.csv")
+write_csv(submit, "class20_submit.csv")
 ```
 
 Now, upload the csv file to GitHub and you are done.
