@@ -1,34 +1,45 @@
 ---
-title: "Lab 16: Crime Type Prediction"
+title: "Lab 17"
 author: ""
-output: html_notebook
+output: html_document
 ---
 
 # Set-up
 
 Read in the following libraries and to load the metadata about
-the flowers:
+the MNIST dataset:
 
 ```{r}
 library(readr)
 library(dplyr)
-library(ggplot2)
+library(glmnet)
+library(keras)
 
-crimes <- read_csv("https://statsmaths.github.io/ml_data/chi_crimes_5.csv")
+mnist <- read_csv("https://statsmaths.github.io/ml_data/mnist_10.csv")
 ```
 
-The names of the crimes are, in order:
+To get the actual data for the images, you'll have to download the mnist file
+from here:
+
+- https://drive.google.com/drive/folders/14k9wNUTUEB3hAjXS8wfXty5_uACu3ZXq
+
+Once this is downloaded, you'll have to run something like this:
 
 ```{r}
-c("criminal_damage", "narcotics", "prostitution", "robbery", "theft")
+x28 <- read_rds("mnist_10_x28.rds")
 ```
 
-Make sure that your predictions are either `1`, `2`, `3`, `4` or `5`.
+If you have trouble with any of this, please let me know as soon as possible.
 
 
 # Todays lab
 
-
+The only thing you need to do today is to play around with different models
+and see how well they work. Once you are satisfied, pick the best model and
+incorporate the predictions into your output in the final chunk below. Note:
+I would suggest keeping each model in its own code chunk for readability.
+Also, save your work frequently as it is quite likely that you will crash
+R at some point.
 
 
 
@@ -45,9 +56,9 @@ The code below assumes that you have added a prediction named
 `pred` to every row of the dataset.
 
 ```{r}
-submit <- select(f17, obs_id, train_id)
+submit <- select(mnist, obs_id, train_id)
 submit <- mutate(submit, pred = pred)
-write_csv(submit, "class14_submit.csv")
+write_csv(submit, "class17_submit.csv")
 ```
 
 Now, upload the csv file to GitHub and you are done.

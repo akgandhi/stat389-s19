@@ -1,5 +1,5 @@
 ---
-title: "Lab 17"
+title: "Lab 18"
 author: ""
 output: html_document
 ---
@@ -7,17 +7,18 @@ output: html_document
 # Set-up
 
 Read in the following libraries and to load the metadata about
-the flowers:
+the FMNIST (fashion) dataset:
 
 ```{r}
 library(readr)
 library(dplyr)
 library(glmnet)
+library(keras)
 
-mnist <- read_csv("https://statsmaths.github.io/ml_data/mnist_10.csv")
+fmnist <- read_csv("https://statsmaths.github.io/ml_data/fashion_10.csv")
 ```
 
-To get the actual data for the images, you'll have to download the mnist file
+To get the actual data for the images, you'll have to download the fmnist file
 from here:
 
 - https://drive.google.com/drive/folders/14k9wNUTUEB3hAjXS8wfXty5_uACu3ZXq
@@ -25,11 +26,10 @@ from here:
 Once this is downloaded, you'll have to run something like this:
 
 ```{r}
-x28 <- read_rds("mnist_10_x28.rds")
+x28 <- read_rds("fashion_10_x28.rds")
 ```
 
-If, for example, the file sits on your Desktop and you have a Mac. If you have
-trouble with any of this, please let me know as soon as possible.
+If you have trouble with any of this, please let me know as soon as possible.
 
 
 # Todays lab
@@ -56,9 +56,9 @@ The code below assumes that you have added a prediction named
 `pred` to every row of the dataset.
 
 ```{r}
-submit <- select(mnist, obs_id, train_id)
+submit <- select(fmnist, obs_id, train_id)
 submit <- mutate(submit, pred = pred)
-write_csv(submit, "class17_submit.csv")
+write_csv(submit, "class18_submit.csv")
 ```
 
 Now, upload the csv file to GitHub and you are done.

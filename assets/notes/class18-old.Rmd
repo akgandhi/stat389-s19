@@ -1,0 +1,205 @@
+---
+title: "Class 18: Texture and Final Project"
+author: "Taylor Arnold"
+output:
+  html_document:
+    css: "style.css"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = TRUE)
+knitr::opts_chunk$set(fig.path = "class18/")
+knitr::opts_chunk$set(fig.height = 5)
+knitr::opts_chunk$set(fig.width = 8.5)
+knitr::opts_chunk$set(out.width = "100%")
+knitr::opts_chunk$set(dpi = 300)
+```
+
+```{r, message = FALSE, warning = FALSE}
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(methods)
+library(keras)
+theme_set(theme_minimal())
+```
+
+## Flowers dataset
+
+Let's look again at the flowers dataset. First, we load the
+metadata. This is exactly the same as any other dataset in which we
+pull in a CSV file from GitHub:
+
+```{r, message=FALSE}
+flowers <- read_csv("https://statsmaths.github.io/ml_data/flowers_17.csv")
+flowers
+```
+
+Then, we also have to grab the image data itself. To do this, first download the dataset here:
+
+- [https://github.com/statsmaths/ml_data/releases/download/v1/flowers_17_x64.rds](https://github.com/statsmaths/ml_data/releases/download/v1/flowers_17_x64.rds)
+
+Save it somewhere on your computer and then read it into R:
+
+```{r}
+x64 <- read_rds("image_data/flowers_17_x64.rds")
+```
+
+I again only want to look at the first 10 types of flowers.
+
+```{r, message = FALSE}
+x64 <- x64[flowers$class %in% 0:9,,,]
+flowers <- flowers[flowers$class %in% 0:9,]
+fnames <- flowers$class_name[match(0:9, flowers$class)]
+fnames <- factor(fnames, levels = fnames)
+```
+
+If we want to improve our model further beyond dense neural networks, we need
+to include information beyond just the color of the flower. When we look at
+the images, our brains also use information about shape and texture. Let's try to find
+a way to measure this in the image.
+
+I will start by taking a sample flower image and creating a black and
+white version of it. A simple way to do this is to average the red,
+green, and blue pixels.
+
+```{r, fig.asp = 1}
+i <- 50
+bw <- (x64[i,,,1] + x64[i,,,2] + x64[i,,,3]) / 3
+plot(0,0,xlim=c(0,1),ylim=c(0,1),axes= FALSE,type = "n")
+rasterImage(bw,0,0,1,1)
+```
+
+To detect texture we can take the brightness of each pixel and
+subtract it from the brightness of the pixel to its lower right.
+We can do this in a vectorized fashion as such:
+
+```{r, fig.asp = 1}
+edge <- abs(bw[-1,-1] - bw[-nrow(bw),-ncol(bw)])
+plot(0,0,xlim=c(0,1),ylim=c(0,1),axes= FALSE,type = "n")
+rasterImage(edge,0,0,1,1)
+```
+
+The resulting image roughly detects edges in the image. Notice
+that is has only 63-by-63 pixels due to the fact that we cannot
+compute this measurement on the rightmost or bottommost edges
+of the plot.
+
+We'll do this for each image, and save the number of pixels that
+have an edge value greater than 0.1. You could of course play around
+with this cutoff, or save a number of different cutoff values. This
+number will tell us roughly how much of the image consists of edges.
+A low number indicates a smooth petal and a a high one indicates
+a grassy texture to the flower.
+
+```{r}
+mean_edge <- rep(0, nrow(flowers))
+for (i in seq_len(nrow(flowers))) {
+  bw <- (x64[i,,,1] + x64[i,,,2] + x64[i,,,3]) / 3
+  edge <- abs(bw[-1,-1] - bw[-nrow(bw),-ncol(bw)])
+  mean_edge[i] <- mean(edge > 0.1)
+}
+```
+
+A boxplot shows that there are differences between the flowers
+in this measurement. Crocuses in particular have a lot of edges.
+
+```{r}
+qplot(flowers$class_name, mean_edge, geom = "blank") +
+  geom_boxplot() +
+  coord_flip() +
+  theme_minimal()
+```
+
+Most of the photos have a flower in the middle, but the background
+may include grass, sky, or other non-related elements. Let's repeat
+the edge detector but now only such as the degree of edge-ness only
+for the middle of the image.
+
+```{r}
+mean_edge_mid <- rep(0, nrow(flowers))
+for (i in seq_len(nrow(flowers))) {
+  bw <- (x64[i,,,1] + x64[i,,,2] + x64[i,,,3]) / 3
+  edge <- abs(bw[-1,-1] - bw[-nrow(bw),-ncol(bw)])
+  mean_edge_mid[i] <- mean(edge[20:44,20:44] > 0.1)
+}
+```
+
+This shows a clearly differentiation of the flowers. Fritillary
+have a lot of edges due to their spots in the middle of
+the photo. Notice that the patterns here are quite different
+from those in the whole image.
+
+```{r}
+qplot(flowers$class_name, mean_edge_mid, geom = "blank") +
+  geom_boxplot() +
+  coord_flip() +
+  theme_minimal()
+```
+
+We will create a data matrix by putting together the color information
+with the `mean_edge` and `mean_edge_mid` metrics.
+
+```{r}
+color_vals <- c(hsv(1, 0, seq(0, 1, by = 0.2)),
+                hsv(seq(0, 0.9, by = 0.1), 1, 1))
+
+X_hsv <- matrix(0, ncol = length(color_vals),
+                   nrow = nrow(flowers))
+for (i in seq_len(nrow(flowers))) {
+  red <- as.numeric(x64[i,,,1])
+  green <- as.numeric(x64[i,,,2])
+  blue <- as.numeric(x64[i,,,3])
+  hsv <- t(rgb2hsv(red, green, blue, maxColorValue = 1))
+
+  color <- rep("#000000", nrow(hsv))
+
+  index <- which(hsv[,2] < 0.2)
+  color[index] <- hsv(1, 0, round(hsv[index,3] * 5) / 5)
+
+  index <- which(hsv[,2] > 0.2 & hsv[,3] > 0.2)
+  color[index] <- hsv(round(hsv[index,1],1), 1, 1)
+
+  X_hsv[i,] <- table(factor(color, levels = color_vals))
+}
+```
+
+```{r, message = FALSE, warning = FALSE}
+X_edge <- cbind(X_hsv, mean_edge, mean_edge_mid)
+y <- flowers$class
+
+X_train <- X_edge[flowers$train_id == "train",]
+X_valid <- X_edge[flowers$train_id == "valid",]
+y_train <- y[flowers$train_id == "train"]
+y_valid <- y[flowers$train_id == "valid"]
+
+library(glmnet)
+model <- cv.glmnet(X_train, y_train, family = "multinomial",
+                   alpha = 0.2)
+plot(model)
+```
+
+I've included the cross-validation curve because it is a
+perfect textbook example of what the curve should look like
+(but rarely does so nicely). The resulting model performs
+better than the color alone.
+
+```{r}
+pred <- as.numeric(predict(model, newx = X_edge,
+                           type = "class"))
+tapply(pred == y, flowers$train_id, mean)
+```
+
+A confusion matrix shows us that only a few flowers are still
+difficult to differentiate.
+
+```{r}
+table(pred = fnames[pred[flowers$train_id == "valid"] + 1],
+      y = y[flowers$train_id == "valid"])
+```
+
+The next step would be to figure out
+what features would help distinguish the "snowdrop", "daffodil",
+and "bluebell" flowers from the others as false positives and
+negatives from these groups are causing a large portion of the
+remaining errors.

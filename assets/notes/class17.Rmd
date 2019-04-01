@@ -1,5 +1,5 @@
 ---
-title: "Class 17: Neural Networks for Image Data"
+title: "Class 17: Dense Neural Networks for Image Data"
 author: "Taylor Arnold"
 output:
   html_document:
@@ -16,46 +16,16 @@ knitr::opts_chunk$set(dpi = 300)
 ```
 
 ```{r, message = FALSE, warning = FALSE}
+reticulate::use_python("/anaconda3/bin/python")
+
 library(readr)
 library(ggplot2)
 library(dplyr)
 library(methods)
 library(keras)
+
 theme_set(theme_minimal())
 ```
-
-## Image processing vs text processing
-
-Recall that when we started with text processing my first assignment
-for you was to hand construct features to classify different types of
-Amazon products. We found that this works fairly well but needed a
-more automated approach. I then showed how to use term-frequency
-matrices to build a large dataset with lots of automatically generated
-counts. An elastic net was then used to fit a model to the data;
-along the way, we also saw those words that were most associated
-with each category.
-
-The primary difficulty with text data was that the raw input were
-not numeric; we needed to do feature extraction in order to
-create numeric features.
-
-The problem with images is different: we have images represented
-natively by pixel intensities. However, good models need to
-incorporate interactions and non-linearities to do much of
-use with pixel data. Also, unlike text models it is unlikely
-that the best model will be relatively sparse.
-
-Think about it this way, if I said that an Amazon review used
-the words "book" and "chapter" each 3 times. From this alone
-you would know there is a high chance it is from a book review.
-If I told you that the red pixel in the center of the image has
-an intensity of 0.42, can you say much about whether this is an
-indoor or outdoor photo?
-
-We have many ways of fitting non-linear models with interactions
-(trees, gams, basis expansion), though the only one that works
-with data having many variables are neural networks. That is why
-we turn to them today.
 
 ## MNIST
 
@@ -85,6 +55,7 @@ mnist <- read_csv("https://statsmaths.github.io/ml_data/mnist_10.csv")
 x28 <- read_rds("image_data/mnist_10_x28.rds")
 ```
 
+A link to download the dataset is given in today's lab.
 These images are in black and white. Let's look at the dimension of
 the data to make sure that it makes sense to us:
 
@@ -93,7 +64,8 @@ dim(x28)
 ```
 
 There are 60000 total images, with 28 rows, 28 columns, and one
-color channel. Before diving into the classification task, we
+color channel. The one color channel exists because the images are
+in black and white. Before diving into the classification task, we
 can take a quick look at what the digits actually look like.
 Here are 60 examples of the digit 2
 
@@ -110,15 +82,41 @@ We can quickly recognize that all of these are the digit 2, though
 note that the specific pixel values between two different 2's can
 be extremely different.
 
-### Neural networks
+### Neural networks: Classification and one-hot encoding
 
-It is now time to return to neural networks. We first flatten the
-dataset `x28` and then construct a training set of data. The only
-tweak for neural networks is the use of `to_categorical` to create
-a matrix for `y_train`. Notice that here the smallest category is
-already "0", so we can put the response `y` in directly to the
-function. Also, pixel values live between 0 and 1 already so there
-is no need to standardize the columns of X.
+It is now time to return to neural networks. 
+However, how do we make the neural network deal with a categorical output?
+The trick for doing multiclass regression with neural networks is to
+realize that we can easily make the last layer of a neural network
+output multiple values. All we need to do is have the function that
+we want to minimize by a function of all these outputs rather than
+a single output with each row of the data. An easy way to do this is
+to assign multiple response variables with each observation and do
+mean squared error loss, but we will now take the mean squared loss of
+predicting all the outputs.
+
+The **keras** package include a function `to_categorical` that converts
+numeric class labels to binary indicator variables. These are called a
+*one-hot encoding*. This is very similar
+to the model matricies we built for the X matrix when using categorical
+predictors. Here is a simple example of its application:
+
+```{r}
+to_categorical(c(1,1,2,4,10))
+```
+
+Notice that keras is 0-indexed, so it wants the first category to be zero.
+That's why we have 11 columns even thought the largest category is ten.
+The best way to understand how to use this response matrix is to see
+a worked example in keras.
+
+
+## Construct training data
+
+Let's now apply this to the MNIST dataset.  We
+first flatten the dataset `x28` and then construct a training
+set of data. This is exactly the same as we did last time with
+the flowers image dataset. 
 
 ```{r}
 X <- t(apply(x28, 1, cbind))
@@ -127,6 +125,12 @@ y <- mnist$class
 X_train <- X[mnist$train_id == "train",]
 y_train <- to_categorical(y[mnist$train_id == "train"], num_classes = 10)
 ```
+
+Notice that here the smallest category 
+is already "0", so we can put the response `y` in directly to the
+`to_categorical` function.
+
+## Building the neural network
 
 Next, we construct the model architecture for the neural network.
 Here we have 28^2 inputs, one hidden layer with 128 neurons, and
@@ -160,7 +164,8 @@ the a's are vectors of biases that need to be learned, and sigma
 is the rectified linear unit (ReLU). The ReLU turns negative values
 into zero and operates component wise on the matrix.
 
-Next, we compile the model:
+Next, we compile the model (notice that this is different because we
+are doing classification):
 
 ```{r}
 model %>% compile(loss = 'categorical_crossentropy',
@@ -169,7 +174,8 @@ model %>% compile(loss = 'categorical_crossentropy',
                   metrics = c('accuracy'))
 ```
 
-And fit it on our training data:
+And fit it on our training data (I taken 20% of the "training" set and re-assigned it
+to a secondary validation set):
 
 ```{r}
 history <- model %>%
@@ -199,6 +205,9 @@ It seems the we most often confuse 9's and 4's;
 these digits all of these confusions should seem reasonable.
 
 ### Visualize weights
+
+[Note: Understand this section, but keep in mind that you do not
+need to run this code every time you build a neural network.]
 
 There are many ways of accessing and modifying the weights
 inside of a training **keras** model. The `get_layer` function
@@ -232,6 +241,7 @@ model %>% compile(loss = 'categorical_crossentropy',
 
 history <- model %>%
   fit(X_train, y_train, epochs = 10, validation_split = 0.2)
+plot(history)
 ```
 
 It is still a fairly good model, relative to its simplicity:
@@ -250,7 +260,8 @@ layer <- get_layer(model, index = 1)
 B <- array(layer$get_weights()[[1]], dim = c(28, 28, 10))
 ```
 
-The
+The code to visualize these weights is a bit complex. Focus on the output rather
+than this code.
 
 ```{r, fig.asp = 1, fig.width = 4}
 relu <- function(mat) {
@@ -276,7 +287,7 @@ for (j in 1:10) {
 
 Green shows positive weights and purple shows negative ones. Remember
 that these 10 images relate to the ten digits. They show which pixels
-need to be activate ("white" in our formulation). Notice that images
+need to be activated ("white" in our formulation). Notice that images
 in this neural network are largely determine based on where the image
 is **not** colored. You can almost see the outlines of the digits in
 the images if you squint at these.
@@ -299,138 +310,10 @@ for (i in id) {
 Compared to the rest of the corpus, these are all relatively thick but
 small.
 
-### Neural Network Regularization
-
-With MNIST, a small neural network goes a long way. The real power of
-neural network though begin to come into play when working with larger
-and deeping networks. We have already seen that it is easy to build
-these with the **keras** package. However, if we have too many parameters
-to the model will begin to overfit. We need to regularize the model much
-like we did with the elastic net.
-
-One way to regularize a neural network is to include a *dropout* layer.
-This layer, during training only, randomly converts a proportion of its
-inputs to zero. This forces the next layer to smooth out weights over
-all of the inputs in the prior layer. It is similar to when random
-forests only allow a random subset of the variable to be used at a
-given branching point or how the weights in a ridge regression force
-the model to spread out over correlated values.
-
-Dropout can be added to the model with the `layer_dropout` function.
-Here, we also change the initializing function for the starting
-weights B in the neural network. I find that "glorot_normal" often
-performs better when using dropout.
-
-```{r}
-model <- keras_model_sequential()
-model %>%
-
-  layer_dense(units = 512, kernel_initializer = "glorot_normal",
-              input_shape = c(28^2)) %>%
-  layer_activation(activation = "relu") %>%
-  layer_dropout(rate = 0.5) %>%
-
-  layer_dense(units = 512, kernel_initializer = "glorot_normal") %>%
-  layer_activation(activation = "relu") %>%
-  layer_dropout(rate = 0.5) %>%
-
-  layer_dense(units = 512, kernel_initializer = "glorot_normal") %>%
-  layer_activation(activation = "relu") %>%
-  layer_dropout(rate = 0.5) %>%
-
-  layer_dense(units = 512, kernel_initializer = "glorot_normal") %>%
-  layer_activation(activation = "relu") %>%
-  layer_dropout(rate = 0.5) %>%
-
-  layer_dense(units = 10) %>%
-  layer_activation(activation = "softmax")
-
-model %>% compile(loss = 'categorical_crossentropy',
-                  optimizer = optimizer_sgd(lr = 0.01, momentum = 0.9,
-                                            nesterov = TRUE),
-                  metrics = c('accuracy'))
-
-model
-```
-
-The new model now has over 1 million parameters. We can train it just
-as with the simpler neural networks.
-
-```{r}
-history <- model %>%
-  fit(X_train, y_train, epochs = 20,
-      validation_split = 0.1, batch_size = 32)
-plot(history)
-```
-
-Why is the training accuracy lower than the validation accuracy, particularly
-for the first few epochs? The reason is that the training accuracy uses the
-dropout functions but the validation accuracy turns the dropout off.
-
-From the plot, it looks like the model is not improving much after about 10
-iterations through the dataset. It is possible to train the model with a
-smaller learning rate to get a slightly better performance.
-
-```{r}
-model %>% compile(loss = 'categorical_crossentropy',
-                  optimizer = optimizer_sgd(lr = 0.003, momentum = 0.9,
-                                            nesterov = TRUE),
-                  metrics = c('accuracy'))
-history <- model %>%
-  fit(X_train, y_train, epochs = 10,
-      validation_split = 0.1, batch_size = 32)
-```
-
-The smaller learning rate helps use achieve a slightly better validation
-than our initial simple model.
-
-```{r}
-y_pred <- predict_classes(model, X)
-tapply(y == y_pred, mnist$train_id, mean)
-table(y[mnist$train_id == "train"], y_pred[mnist$train_id == "train"])
-```
-
-We are now around 97.5% accurate on the training set.
-
-### Tuning Neural Networks
-
-The next lab has you take your turn at building a neural
-network on a dataset very similar to MNIST. There are a
-number of parameters that you can change in the neural
-network. Many of you asked me to be more explicit regarding
-how to select tuning parameters. Here are the general rules
-I would follow at this point:
-
-- run a model for how ever many epochs (iterations) it takes
-to visually flatline
-- always build layers by putting together a `layer_dense`,
-`layer_activation` ("relu" on all but the last, which should
-be "softmax") and `layer_dropout`
-- use `optimizer_sgd` with `nesterov = TRUE` and momentum
-equal to `0.9`
-- make all hidden layers have the same number of nodes
-- start with 2 hidden layers with 128 nodes each and an
-`lr = 0.01`
-
-Then, you can change the following parameters as you test
-which ones work the best. Make sure that you only change one
-thing at a time and run enough epochs to get the model to
-roughly converge
-
-- experiment with between 2 and 5 hidden layers
-- try doubling or halving the number of hidden nodes;
-usually work in powers of 2
-- if the model is very noisy, you can decrease the dropout
-to 0.25
-- try successively halving the loss ratio
-
-Try to start small and work up slowly so you do not crash
-R (or, at least, you don't crash R too frequently).
-
 
 ## Flowers with Neural Networks
 
-Jjust for comparison, let's try to use neural networks to fit the
+Just for comparison, let's try to use neural networks to fit the
 flowers dataset.
 
 ```{r, message = FALSE}
