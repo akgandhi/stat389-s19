@@ -1,0 +1,180 @@
+---
+title: "Exam 03"
+output: html_document
+---
+
+```{r, message=FALSE}
+library(readr)
+library(dplyr)
+library(glmnet)
+library(xgboost)
+library(keras)
+library(ggplot2)
+library(mgcv)
+
+theme_set(theme_minimal())
+```
+
+## Instructions
+
+This exam has two components. The first asks you to apply several optimization
+algorithms to a machine learning task. The second has you apply four machine
+learning methods to a prediction task. When you are finished, knit the document
+to an HTML file (Note: this will re-run your entire code and may take a few minutes).
+Submit the HTML file and the Rmd file. You do not need to upload your predictions.
+
+This exam is due at 9am on Thursday, 11 April 2019.
+
+You may use any static outside resources you find useful, but may not consult
+directly with classmates or others about the exam. If you have questions,
+please email me directly.
+
+Note: While you are welcome to ask, I may not able to answer questions asked
+after 3pm on Wednesday, 10 April. Make sure you have made significant progress
+prior to this time.
+
+## Part I - Algorithms
+
+Generate the following dataset:
+
+```{r}
+p <- 20
+n <- 1000
+X <- matrix(runif(n * p), ncol = p)
+beta <- c(rep(1, 4), rep(0, p - 4))
+
+y <- runif(n) > 1 / (1 + exp(- X %*% beta))
+```
+
+We want to apply logistic regression to the task of predicting y as a function
+of the columns in X. In the code block below, use each method to find the
+optimal regression vector. Note that a lot of the hard work was already done
+for you in the material from classes 9 (logistic regression) and 16 (sgd) and
+the first two methods are already implemented in the notes (but you may need
+to modify some of the code to work with this data). For each method,
+print out how well (RMSE) the method's solution compares the solution using
+R's internal function:
+
+```{r}
+beta_glm <- glm.fit(X, y, family = binomial())
+```
+
+
+### Method A: Gradient Descent
+
+```{r}
+
+```
+
+
+### Method B: Newton-Ralphson Method (Gradient Descent with Hessian)
+
+```{r}
+
+```
+
+
+### Method C: Stochastic Gradient Descent (SGD)
+
+```{r}
+
+```
+
+
+
+### Method D: SGD with Momentum
+
+```{r}
+
+```
+
+### "Method" E: Reflection
+
+Write a few sentences below describing how well the four approaches perform
+relative to one another and how well they approach the solution given by
+R's glm function.
+
+
+
+
+
+## Part II - Application
+
+For the application section, read in the follow dataset. It contains information
+about crimes in the city of Chicago. I have included only two crime types: narcotics (0)
+and prostitution (1). Your goal is to build a classification algorithm that is able
+to predict which crime occurs given the associated metadata.
+
+```{r}
+crimes <- read_csv("https://statsmaths.github.io/ml_data/chi_crimes_2.csv")
+ocol <- ncol(crimes)
+```
+
+Note that there are only training and validation sets. You do not need to submit
+your predictions. I will be able to see how well your model performs by looking
+at your finished code.
+
+In each section below, fit a model on just the training dataset and show the
+classification rate for making predictions on the training and validation sets.
+Make sure to follow the other instructions within each section.
+
+### Method A: elastic net
+
+For the first model, build an elastic net. Make sure to also display the most
+important features from the model.
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+### Method B: Gradient boosted trees
+
+Now, fit a gradient boosted tree model. Also include the variable important
+metrics.
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+```{r}
+
+```
+
+### Method C: GAMs
+
+Next, fit a generalized linear model (GAM). You do not need to include all of the variables;
+just use those that seem the most useful.
+
+```{r}
+
+```
+
+### Method D: Neural Network
+
+Finally, fit a neural network to the dataset. You are free to choose whatever architecture
+and training algorithm seems most appropriate. Hint: remember to scale the data matrix.
+
+```{r}
+
+```
+
+### "Method" E: Reflection
+
+Write a few sentences below describing how well the four models perform relative
+to one another and what you learned (if anything) from the importance scores in
+the elastic net and gradient boost tree models:
+
+
+
+
+
+
+
