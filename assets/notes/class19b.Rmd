@@ -1,0 +1,121 @@
+---
+title: "Class 19b: Le-Net for MNIST-10"
+author: "Taylor Arnold"
+output:
+  html_document:
+    css: "style.css"
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(eval = TRUE)
+knitr::opts_chunk$set(fig.path = "class19b")
+knitr::opts_chunk$set(fig.height = 5)
+knitr::opts_chunk$set(fig.width = 8.5)
+knitr::opts_chunk$set(out.width = "100%")
+knitr::opts_chunk$set(dpi = 300)
+```
+
+```{r, message = FALSE, warning = FALSE}
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(methods)
+library(keras)
+```
+
+### Le-Net for MNIST-10 (1995)
+
+Let's read in the MNIST dataset once again:
+
+```{r, message = FALSE}
+library(keras)
+mnist <- read_csv("https://statsmaths.github.io/ml_data/mnist_10.csv")
+X <- read_rds("image_data/mnist_10_x28.rds")
+y <- mnist$class
+
+X_train <- X[mnist$train_id == "train",,,,drop = FALSE]
+y_train <- to_categorical(y[mnist$train_id == "train"], num_classes = 10)
+```
+
+Yann LeCun, one of the creators of the MNIST-10 dataset, was a
+pioneer of using CNNs. His 1995 paper provided one of the first
+examples where CNNs produced state-of-the-art results for image
+classification:
+
+- LeCun, Yann, et al. "Learning algorithms for classification: A comparison on handwritten digit recognition." *Neural networks: the statistical mechanics perspective* 261 (1995): 276.
+
+I have tried to reproduce his exact model and training technique
+here in keras. As techniques were not standardized at the time, this
+only approximate, but gets to the general point of how powerful these
+CNNs are.
+
+```{r}
+model <- keras_model_sequential()
+model %>%
+  layer_conv_2d(filters = 6, kernel_size = c(5, 5),
+                  input_shape = c(28, 28, 1)) %>%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>%
+  layer_activation(activation = "sigmoid") %>%
+
+  layer_conv_2d(16, kernel_size = c(5, 5)) %>%
+  layer_max_pooling_2d(pool_size = c(2, 2)) %>%
+  layer_activation(activation = "sigmoid") %>%
+
+  layer_conv_2d(120, kernel_size = c(1, 1)) %>%
+
+  layer_flatten() %>%
+
+  layer_dense(units = 84) %>%
+  layer_activation(activation = "sigmoid") %>%
+  layer_dense(units = 10) %>%
+  layer_activation(activation = "softmax")
+```
+
+To fit the model, we do SGD with a large learning rate that is
+manually decreased after a handful of epochs. Remember, in 1995
+computers were not nearly as powerful as what they are today,
+so it was feasible to only run a limited number of epochs even
+on a large research project and with the resources at AT&T Bell
+Labs.
+
+```{r}
+model %>% compile(loss = 'categorical_crossentropy',
+                  optimizer = optimizer_sgd(lr = 0.1, momentum = 0.8),
+                  metrics = c('accuracy'))
+model %>% fit(X_train, y_train, epochs = 2,
+      validation_split = 0.1)
+model %>% compile(loss = 'categorical_crossentropy',
+                  optimizer = optimizer_sgd(lr = 0.08, momentum = 0.8),
+                  metrics = c('accuracy'))
+model %>% fit(X_train, y_train, epochs = 3,
+      validation_split = 0.1)
+model %>% compile(loss = 'categorical_crossentropy',
+                  optimizer = optimizer_sgd(lr = 0.04, momentum = 0.8),
+                  metrics = c('accuracy'))
+model %>% fit(X_train, y_train, epochs = 3,
+      validation_split = 0.1)
+model %>% compile(loss = 'categorical_crossentropy',
+                  optimizer = optimizer_sgd(lr = 0.02, momentum = 0.8),
+                  metrics = c('accuracy'))
+model %>% fit(X_train, y_train, epochs = 4,
+      validation_split = 0.1)
+model %>% compile(loss = 'categorical_crossentropy',
+                  optimizer = optimizer_sgd(lr = 0.008, momentum = 0.8),
+                  metrics = c('accuracy'))
+model %>% fit(X_train, y_train, epochs = 4,
+      validation_split = 0.1)
+```
+
+The prediction here is fairly good, and better than the dense
+networks I had last time.
+
+```{r}
+y_pred <- predict_classes(model, X)
+tapply(y == y_pred, mnist$train_id, mean)
+```
+
+This is not quite as good as the 99% accuracy reported in the paper.
+Likely this is due to using both the training and validation sets
+as well as some tweaks Yann LeCun and company used that
+was not fully documented in their paper. This is a common but
+frustrating patter than occurs often in neural network literature.

@@ -1,0 +1,192 @@
+---
+title: "Lab 20"
+author: "Taylor Arnold"
+output:
+  html_document
+---
+
+```{r, message = FALSE, warning = FALSE}
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(methods)
+library(stringi)
+library(keras)
+```
+
+# Set-up
+
+Read in the following libraries:
+
+```{r}
+library(readr)
+library(dplyr)
+library(glmnet)
+library(keras)
+```
+
+Today we are going to look at image classification from 10 classes of images.
+Get the imagenette-320.zip here:
+
+
+- https://drive.google.com/drive/folders/14k9wNUTUEB3hAjXS8wfXty5_uACu3ZXq
+
+Once this is downloaded, you'll have to run something like in the notes to
+construct the training data and build a prediction model. Try a few things
+with the dataset before moving on... Can you use a different transfer model
+or grab a different internal layer? How does that influence the predictions?
+
+**For this lab, just upload the Rmd file rather than your predictions**
+
+## Run transfer learning
+
+Here, I grabbed the ResNet50 model and the penultimate layer.
+
+```{r}
+resnet50 <- application_resnet50(weights = 'imagenet', include_top = TRUE)
+model_avg_pool <- keras_model(inputs = resnet50$input,
+                              outputs = get_layer(resnet50, 'avg_pool')$output)
+```
+
+Next, read in the dataset. This should work with a different input provided
+you structure the dataset the same way.
+
+```{r}
+input_dir <- "../notes/image_data/imagenette-320/"
+
+image_paths <- dir(input_dir, recursive = TRUE)
+ext <- stri_match(image_paths, regex = "\\.([A-Za-z]+$)")[,2]
+image_paths <- image_paths[stri_trans_tolower(ext) %in% c("jpg", "png", "jpeg")]
+class_vector <- dirname(image_paths)
+class_names <- levels(factor(class_vector))
+
+n <- length(class_vector)
+Z <- array(0, dim = c(n, 224, 224, 3))
+y <- as.numeric(factor(class_vector)) - 1L
+for (i in seq_len(n))
+{
+  pt <- file.path(input_dir, image_paths[i])
+  image <- image_to_array(image_load(pt, target_size = c(224,224)))
+  Z[i,,,] <- array_reshape(image, c(1, dim(image)))
+}
+
+set.seed(1)
+index <- sample(seq_len(nrow(Z)))
+Z <- Z[index,,,]
+y <- y[index]
+```
+
+Now, produce the embeddings:
+
+```{r}
+X <- predict(model_avg_pool, x = imagenet_preprocess_input(Z), verbose = TRUE)
+dim(X)
+```
+
+With the new embedding matrix, let's construct a training dataset. Here I am using
+a 60/40 split, but you can always modify this.
+
+```{r}
+train_id <- sample(c("train", "valid"), nrow(X), TRUE, prob = c(0.6, 0.4))
+
+X_train <- X[train_id == "train",]                  # Note: X is a matrix
+y_train <- to_categorical(y[train_id == "train"])
+```
+
+With this dataset, we can fit any model that we want, though its easy enough to just
+use a neural network:
+
+```{r}
+model <- keras_model_sequential()
+model %>%
+  layer_dense(units = 256, input_shape = ncol(X_train)) %>%
+  layer_activation(activation = "relu") %>%
+  layer_dropout(rate = 0.5) %>%
+
+  layer_dense(units = 256) %>%
+  layer_activation(activation = "relu") %>%
+  layer_dropout(rate = 0.5) %>%
+
+  layer_dense(units = ncol(y_train)) %>%
+  layer_activation(activation = "softmax")
+
+model %>% compile(loss = 'categorical_crossentropy',
+                  optimizer = optimizer_rmsprop(lr = 0.001 / 2),
+                  metrics = c('accuracy'))
+
+history <- model %>%
+  fit(X_train, y_train, epochs = 8)
+plot(history)
+```
+
+How well does this model make predictions? It almost perfectly fits the training set
+end gets over 98% correct on the test set, this with a fairly complex task and only a
+few hundred training examples.
+
+```{r}
+y_pred <- predict_classes(model, X)
+tapply(y == y_pred, train_id, mean)
+```
+
+Here is the confusion matrix:
+
+```{r}
+table(value = class_names[y + 1L], prediction = class_names[y_pred + 1L], train_id)
+```
+
+We can also look at some negative examples, but there really are not many here:
+
+```{r}
+par(mfrow = c(2, 3))
+id <- which(y_pred != y)
+for (i in id) {
+  par(mar = rep(0, 4L))
+  plot(0,0,xlim=c(0,1),ylim=c(0,1),axes= FALSE,type = "n")
+  rasterImage(Z[i,,,] /255,0,0,1,1)
+  text(0.5, 0.1, label = class_names[y_pred[i] + 1L], col = "red", cex=6)
+}
+```
+
+Finally, we can also find those examples that have the highest probability of being
+in a class. First, get all of the probabilities:
+
+```{r}
+y_probs <- predict(model, X)
+```
+
+Then, this code gives the highest classification rate for each types (a bit
+modified from the notes):
+
+```{r}
+id <- apply(y_probs, 2, which.max)
+
+par(mfrow = c(3, 4))
+for (i in id) try({
+  par(mar = rep(0, 4L))
+  plot(0,0,xlim=c(0,1),ylim=c(0,1),axes= FALSE,type = "n", asp=1)
+  rasterImage(Z[i,,,] /256,0,0,1,1)
+  text(0.5, 0.1, label = class_names[y[i] + 1L], col = "red", cex=4)
+})
+```
+
+### A bit of visualization
+
+Let's try to visualize the embedding itself using principle components again:
+
+```{r}
+pca <- as_tibble(prcomp(X)$x[,1:2])
+pca$y <- class_names[y + 1L]
+```
+
+And then plot it:
+
+```{r}
+ggplot(pca, aes(PC1, PC2)) +
+  geom_point(aes(color = y), size = 4) +
+  labs(x = "", y = "", color = "class") +
+  theme_minimal()
+```
+
+
+
+
