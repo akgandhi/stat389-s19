@@ -1,0 +1,187 @@
+---
+title: "Exam 04"
+output: html_document
+---
+
+```{r, message=FALSE}
+library(readr)
+library(dplyr)
+library(glmnet)
+library(xgboost)
+library(keras)
+library(ggplot2)
+library(mgcv)
+
+theme_set(theme_minimal())
+```
+
+## Instructions
+
+This exam is due at 9am on Thursday, 25 April 2019. When you are done with all
+of the questions, knit the document to an HTML file and submit the HTML file
+and the Rmd file to GitHub. You do not need to upload any predictions.
+
+Because of the way exams were structured this semester, if you are taking this
+fourth exam it is likely because you struggled with one of the previous tests.
+It would be easy for me to simply throw another prediction tasks, probably
+some sort of image classification and/or neural network problem, and ask you
+to solve for this. However, this would be just a silly replication of whatever
+you are doing for the final project. Keeping in mind that most students who
+struggled with something either had a difficulty with the theory of optimizing
+least squares problems (Exam I) or implementing general optimization tasks
+(Exam III, part 1), I have decided to take a different approach.
+
+This exam focuses on several variations of the least squares problem (what we
+have simply called linear regression). The goal in both variations is to
+minimize the sum of squared residuals, but to do so with constraints on the
+allowed parameters for the regression vector beta. In each of the three
+sections below, I describe specific variations of this theme. I also provide
+some simulated data. Your goal is to implement a solution to the proposed
+optimization problem using coordinate descent.
+
+These solutions may require you to do some pen-and-paper calculations before
+you are able to write the corresponding code.
+
+## Task A: Non-negative least squares
+
+Here, we want to solve the ordinary least squares problem, finding the optimal
+beta to minimize:
+
+$$ || y - X b ||_2^2 $$
+
+Subject to the constraint that all of the beta terms must be non-negative. This
+is called non-negative least squares (NNLS).
+
+Use the following simulated data:
+
+```{r}
+set.seed(1)
+n <- 100
+p <- 10
+
+b <- c(2, rep(0, p - 1L))
+Sigma <- matrix(0.8, p, p)
+diag(Sigma) <- 1
+X <- MASS::mvrnorm(n = n, mu = rep(0, p), Sigma = Sigma)
+
+y <- X %*% b + rnorm(n, sd = 1)
+```
+
+Here, for reference, in the OLS solution:
+
+```{r}
+beta_ols <- solve(crossprod(X, X), t(X) %*% y)
+beta_ols
+```
+
+Now, compute the non-negative least squares solution using a coordinate
+descent algorithm:
+
+```{r}
+
+```
+
+When you are done, assuming you have saved that NNLS as `beta`, the following
+should show that your solution reproduces the "true" value of b better than
+the OLS solution.
+
+```{r}
+sprintf("Parameter error in b using OLS: %f", sum((b - beta_ols)^2))
+sprintf("Parameter error in b using NNLS: %f", sum((b - beta)^2))
+```
+
+## Task B: Bounded variable least squares
+
+The bounded variable least squares (BVLS) problem is very similar to NNLS, but
+includes an upper bound on the variables as well. That is, not only can a
+variable not be negative, it also is not allowed to be too large. In this
+problem we will assume that the bounds force every value of b to be between
+0 and 1.
+
+Use the following simulated data:
+
+```{r}
+set.seed(1)
+n <- 100
+p <- 10
+
+b <- c(rep(1, p/2), rep(0, p/2))
+Sigma <- matrix(0.8, p, p)
+diag(Sigma) <- 1
+X <- MASS::mvrnorm(n = n, mu = rep(0, p), Sigma = Sigma)
+
+y <- X %*% b + rnorm(n, sd = 1)
+```
+
+Here, for reference, in the OLS solution:
+
+```{r}
+beta_ols <- solve(crossprod(X, X), t(X) %*% y)
+beta_ols
+```
+
+Now, compute the non-negative least squares solution using a coordinate
+descent algorithm:
+
+```{r}
+
+```
+
+When you are done, assuming you have saved that BVLS as `beta`, the following
+should show that your solution reproduces the "true" value of b better than
+the OLS solution.
+
+```{r}
+sprintf("Parameter error in b using OLS: %f", sum((b - beta_ols)^2))
+sprintf("Parameter error in b using BVLS: %f", sum((b - beta)^2))
+```
+
+## Task C: Integer least squares
+
+In this third and final task, we again want to minimize the sum of squared
+residual in linear regression, but with a different kind of constraint. Here,
+we want to constrain the regression vector to only allow coefficents to be
+equal to integers. This is called integer constrained least squares (ICLS).
+
+Use the following simulated data:
+
+```{r}
+set.seed(1)
+n <- 100
+p <- 10
+
+b <- seq_len(p)
+Sigma <- matrix(0.8, p, p)
+diag(Sigma) <- 1
+X <- MASS::mvrnorm(n = n, mu = rep(0, p), Sigma = Sigma)
+
+y <- X %*% b + rnorm(n, sd = 1)
+```
+
+Here, for reference, in the OLS solution:
+
+```{r}
+beta_ols <- solve(crossprod(X, X), t(X) %*% y)
+beta_ols
+```
+
+Now, compute the non-negative least squares solution using a coordinate
+descent algorithm. Note that to do this with an integer constraint, you should
+first solve each coordinate on a continuous scale. Then, use the `floor()` and
+`ceiling()` functions to find the two closest integers. Check the MSE at each
+of these and set the coordinate equal to smallest.... No, rounding to the
+nearest integer will NOT work.
+
+```{r}
+
+```
+
+When you are done, assuming you have saved that ICLS as `beta`, the following
+should show that your solution reproduces the "true" value of b better than
+the OLS solution. I found on my machine that ICLS perfectly reconstructed the
+regression vector.
+
+```{r}
+sprintf("Parameter error in b using OLS: %f", sum((b - beta_ols)^2))
+sprintf("Parameter error in b using ICLS: %f", sum((b - beta)^2))
+```
