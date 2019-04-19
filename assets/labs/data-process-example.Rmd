@@ -1,0 +1,181 @@
+---
+title: "Data Embedding"
+author: "Taylor Arnold"
+output:
+  html_document
+---
+
+```{r, message = FALSE, warning = FALSE}
+library(readr)
+library(ggplot2)
+library(dplyr)
+library(methods)
+library(stringi)
+library(keras)
+```
+
+You will probably find that it is useful to isolate your code for taking
+the raw images in your corpus, projecting them through the lower layers
+of a neural network, and saving these results. You can then just read in
+this dataset to write your report (you would fit your models in the second
+file). Because many of you are not familiar with how this might be done,
+I thought it may by useful to show how this would work through the example
+with imagenette. I'll also include the code for working with data that is
+too large to fit into memory.
+
+First, let's grab the model that you want to embed the dataset with. You should
+be able to change this without the rest of the code breaking.
+
+```{r}
+resnet50 <- application_resnet50(weights = 'imagenet', include_top = TRUE)
+model_embed <- keras_model(inputs = resnet50$input,
+                           outputs = get_layer(resnet50, 'avg_pool')$output)
+```
+
+Next, we need to create a vector that includes the filenames of the images in the
+dataset. If you modify the `input_dir` variable below, the following should provide
+all of these paths for you:
+
+```{r}
+input_dir <- "../notes/image_data/imagenette-320/"
+
+image_paths <- dir(input_dir, recursive = TRUE)
+ext <- stri_match(image_paths, regex = "\\.([A-Za-z]+$)")[,2]
+image_paths <- image_paths[stri_trans_tolower(ext) %in% c("jpg", "png", "jpeg")]
+
+print(sprintf("You have a total of %d images in the corpus.", length(image_paths)))
+```
+
+Next, you will need to extract the labels for each of the image. **This may change
+depending on how you setup your corpus**. The following works as-is if you have 
+top-level directories with the names of the classes as with imagenette.
+
+```{r}
+# you may need to change this:
+class_vector <- dirname(image_paths)
+
+# check that the classes look correct (should show
+# all of the class names and how many images are in
+# in each class)
+cbind(table(class_vector))
+```
+
+Now, let's make a data frame to capture all of the metadata that we know about
+your collection. We will save this as a data frame similar to those that we used
+in class with MNIST, EMNIST, FMINST, and the flowers dataset:
+
+```{r}
+# shuffle the input in a consistent way
+set.seed(1)
+if (length(class_vector) != length(image_paths)) stop("Something is very wrong!")
+index <- sample(seq_along(class_vector))
+image_paths <- image_paths[index]
+class_vector <- class_vector[index]
+
+# create training ids (this makes a 60/40 split, change 0.6 to modify this)
+# it uses some fancier logic to make sure that the split is even
+set.seed(1)
+class_num <- as.numeric(factor(class_vector)) - 1L
+vals <- runif(length(class_num))
+coffs <- tapply(vals, class_num, quantile, probs = 0.6)
+train_id <- if_else(vals <= coffs[class_num + 1], "train", "valid")
+
+# create metadata dataset
+img_data <- tibble(obs_id = sprintf("id_%06d", seq_along(class_vector)),
+                   train_id = train_id,
+                   class = class_num,
+                   class_name = class_vector,
+                   path_to_image = file.path(input_dir, image_paths))
+
+# save the dataset as a csv file
+write_csv(img_data, "my-image-data.csv")
+
+# print out table of training and validation samples in each class
+table(img_data$class_name, img_data$train_id)
+```
+
+Now, we need to create the embedding. Create an empty matrix to store the data
+(this should fit in memory just fine):
+
+```{r}
+X <- matrix(NA_real_, nrow = nrow(img_data), ncol = as.numeric(model_embed$output_shape[[2]]))
+```
+
+Now, simply cycle through batches of the data, embed each batch, and save each batch
+in X.
+
+```{r}
+# this will load the data in 5 batches; make the number large
+# enough so that you do not run into memory issues
+num_batch <- 5
+batch_id <- sample(seq_len(num_batch), nrow(img_data), replace=TRUE)
+
+input_shape <- unlist(model_embed$input_shape)[1:2]
+for (j in seq_len(num_batch))
+{
+  print(sprintf("Processing batch %d of %d", j, num_batch))
+  these <- which(batch_id == j)
+  unlist(model_embed$input_shape)
+  
+  Z <- array(0, dim = c(length(these), input_shape, 3))
+  for (i in seq_along(these))
+  {
+    pt <- img_data$path_to_image[these[i]]
+    image <- image_to_array(image_load(pt, target_size = input_shape))
+    Z[i,,,] <- array_reshape(image, c(1, c(input_shape, 3)))
+  }
+  X_temp <- predict(model_embed, x = imagenet_preprocess_input(Z), verbose = TRUE)
+  X[these,] <- array(X_temp, dim = c(length(these), ncol(X)))
+}
+```
+
+Then, you can save X as binary file on your computer:
+
+```{r}
+write_rds(X, "my-image-embed.rds")
+```
+
+## Sanity check
+
+You should probably do the majority of our modeling in a different file so you do not
+need to re-run all of the above each time, but I like being able to sanity check that
+the data makes sense by running a small model and making sure I have some signal.
+Here is a complete simply model:
+
+```{r}
+X_train <- X[img_data$train_id == "train",]          
+y_train <- to_categorical(img_data$class[img_data$train_id == "train"])
+
+model <- keras_model_sequential()
+model %>%
+  layer_dense(units = 256, input_shape = ncol(X_train)) %>%
+  layer_activation(activation = "relu") %>%
+  layer_dropout(rate = 0.5) %>%
+
+  layer_dense(units = 256) %>%
+  layer_activation(activation = "relu") %>%
+  layer_dropout(rate = 0.5) %>%
+
+  layer_dense(units = ncol(y_train)) %>%
+  layer_activation(activation = "softmax")
+
+model %>% compile(loss = 'categorical_crossentropy',
+                  optimizer = optimizer_rmsprop(lr = 0.001 / 2),
+                  metrics = c('accuracy'))
+
+history <- model %>%
+  fit(X_train, y_train, epochs = 8)
+```
+
+You'll want to make sure it does better than random guessing:
+
+```{r}
+y_pred <- predict_classes(model, X)
+tapply(img_data$class == y_pred, img_data$train_id, mean)
+```
+
+
+
+
+
+
