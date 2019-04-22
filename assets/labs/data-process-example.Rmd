@@ -47,7 +47,7 @@ print(sprintf("You have a total of %d images in the corpus.", length(image_paths
 ```
 
 Next, you will need to extract the labels for each of the image. **This may change
-depending on how you setup your corpus**. The following works as-is if you have 
+depending on how you setup your corpus**. The following works as-is if you have
 top-level directories with the names of the classes as with imagenette.
 
 ```{r}
@@ -98,7 +98,8 @@ Now, we need to create the embedding. Create an empty matrix to store the data
 (this should fit in memory just fine):
 
 ```{r}
-X <- matrix(NA_real_, nrow = nrow(img_data), ncol = as.numeric(model_embed$output_shape[[2]]))
+num_cols <- model_embed$output_shape[[length(model_embed$output_shape)]]
+X <- matrix(NA_real_, nrow = nrow(img_data), ncol = as.numeric(num_cols))
 ```
 
 Now, simply cycle through batches of the data, embed each batch, and save each batch
@@ -116,7 +117,7 @@ for (j in seq_len(num_batch))
   print(sprintf("Processing batch %d of %d", j, num_batch))
   these <- which(batch_id == j)
   unlist(model_embed$input_shape)
-  
+
   Z <- array(0, dim = c(length(these), input_shape, 3))
   for (i in seq_along(these))
   {
@@ -143,7 +144,7 @@ the data makes sense by running a small model and making sure I have some signal
 Here is a complete simply model:
 
 ```{r}
-X_train <- X[img_data$train_id == "train",]          
+X_train <- X[img_data$train_id == "train",]
 y_train <- to_categorical(img_data$class[img_data$train_id == "train"])
 
 model <- keras_model_sequential()
